@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+// ════════════════════════════════════════════════
+//  ENUMS
+// ════════════════════════════════════════════════
+
+enum GameMode {
+  SOCIAL_DEDUCTION  // hidden roles, voting, elimination
+  RACE              // stability meter, no elimination
+  GHOST             // 4 players, anonymous edits, blind phase
+}
+
+enum Difficulty {
+  ROOKIE
+  DEVELOPER
+  SENIOR
+  EXPERT
+}
+
+enum RoomStatus {
+  WAITING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum GamePhase {
+  WAITING      // pre-game lobby
+  BLIND        // Ghost only  — 0:00-5:00, mafia edits fully invisible
+  CODING       // all modes   — main coding phase
+  VOTING       // Social only — active vote round in progress
+  LOCKDOWN     // Ghost only  — 18:00-20:00, code locked, final vote
+  ROUND_END    // between rounds
+  GAME_OVER
+}
+
+enum Role {
+  DEVELOPER         // standard good guy
+  MAFIA             // standard bad guy
+  DETECTIVE         // Social Deduction: can investigate one player
+  SABOTEUR          // Social Deduction: mafia-aligned, silent revert ability
+  LEAD_DEV          // Social Deduction: can lock a file for 60s
+}
+
+enum WinnerSide {
+  DEVELOPERS
+  MAFIA
+}
+
+enum WinReason {
+  // Social Deduction
+  ALL_MAFIA_ELIMINATED
+  TESTS_PASSED
+  OUTNUMBERED
+  // Ghost
+  CORRECT_VOTE          // devs correctly identified mafia in final vote
+  WRONG_VOTE            // mafia survived final vote
+  PROBLEMS_BROKEN       // mafia kept 2+ problems failing at lockdown
+  MAFIA_SELF_SOLVED     // mafia solved own + kept 2 others broken (bonus win)
+  // Race
+  METER_HELD            // one side held stability meter for threshold duration
+  // Common
+  TIME_EXPIRED
+}
+
+enum ChangeType {
+  ADD
+  REMOVE
+  MODIFY
+}
+
+// ════════════════════════════════════════════════
+//  USER
+// ════════════════════════════════════════════════
+
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  email         String?  @unique
+  passwordHash  String?
+  refreshToken  String?           // hashed refresh token for JWT rotation
+  isGuest       Boolean  @default(false)
+  gamesPlayed   Int      @default(0)
+  gamesWon      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  hostedRooms   Room[]             @relation("RoomHost")
+  gamePlayers   GamePlayer[]
+  activityLogs  ActivityLog[]
+  codeChanges   CodeChange[]
+  executions    ExecutionLog[]
+  votesCast     Vote[]
+  blameUsages   BlameUsage[]       // Ghost mode
+  progression   PlayerProgression?
+}
+
+// ════════════════════════════════════════════════
+//  ROOM
+// ════════════════════════════════════════════════
+
+model Room {
+  id               String     @id @default(uuid())
+  roomCode         String     @unique   // 6-char human-readable code e.g. "XK92PL"
+  hostId           String
+  host             User       @relation("RoomHost", fields: [hostId], references: [id])
+  maxPlayers       Int        @default(6)
+  mafiaCount       Int        @default(1)
+  language         String     @default("javascript")  // js | python | java
+  timeLimitMinutes Int        @default(20)
+  isPublic         Boolean    @default(true)
+  status           RoomStatus @default(WAITING)
+  mode             GameMode   @default(SOCIAL_DEDUCTION)
+  difficulty       Difficulty @default(DEVELOPER)
+  modeConfig       Json?      // mode-specific overrides (votingWindowSeconds, stabilityThreshold, etc.)
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  // Relations
+  game             Game?
+  players          GamePlayer[]
+}
+
+// ════════════════════════════════════════════════
+//  GAME
+// ════════════════════════════════════════════════
+
+model Game {
+  id          String      @id @default(uuid())
+  roomId      String      @unique
+  room        Room        @relation(fields: [roomId], references: [id])
+  phase       GamePhase   @default(WAITING)
+  round       Int         @default(1)
+  winner      WinnerSide?
+  winReason   WinReason?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime    @default(now())
+
+  // Relations
+  players       GamePlayer[]
+  activityLogs  ActivityLog[]
+  codeChanges   CodeChange[]
+  voteRounds    VoteRound[]
+  executions    ExecutionLog[]
+  problems      GameProblem[]   // Ghost mode
+  stabilityLogs StabilityLog[]  // Race mode
+}
+
+// ════════════════════════════════════════════════
+//  GAME PLAYER  (one row per player per game)
+// ════════════════════════════════════════════════
+
+model GamePlayer {
+  id               String    @id @default(uuid())
+  gameId           String
+  game             Game      @relation(fields: [gameId], references: [id])
+  userId           String
+  user             User      @relation(fields: [userId], references: [id])
+  roomId           String                                               
+    room             Room      @relation(fields: [roomId], references: [id]) // ADD
+  role             Role?               // set at game start, never exposed via REST
+  isEliminated     Boolean   @default(false)
+  isRevealed       Boolean   @default(false)    // role publicly shown (post-game or on elim)
+  isConnected      Boolean   @default(true)
+  disconnectedAt   DateTime?
+
+  // Ability tracking (Social Deduction special roles)
+  abilityUsed      Boolean   @default(false)
+  abilityUsedAt    DateTime?
+
+  // Ghost mode
+  blameTokensLeft  Int       @default(1)        // each player gets 1 blame token
+
+  // Per-round sabotage limit (enforced server-side, reset each round)
+  mafiaActionsLeft Int       @default(0)
+
+  xpEarned         Int       @default(0)        // awarded at game end
+  joinedAt         DateTime  @default(now())
+
+  @@unique([gameId, userId])
+
+  // Relations
+  votes           Vote[]
+  blameTargets    BlameUsage[]  @relation("BlameTarget")
+  assignedProblem GameProblem?  @relation("ProblemAssignee") // Ghost mode
+}
+
+// ════════════════════════════════════════════════
+//  VOTE ROUND  (Social Deduction + Ghost final vote)
+// ════════════════════════════════════════════════
+
+model VoteRound {
+  id              String    @id @default(uuid())
+  gameId          String
+  game            Game      @relation(fields: [gameId], references: [id])
+  round           Int
+  nominatedUserId String?   // Social Deduction: who is being voted on
+  isFinalVote     Boolean   @default(false)  // Ghost: lockdown identity vote
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  result          String?   // 'ELIMINATED' | 'SPARED' | 'CORRECT' | 'WRONG'
+
+  votes           Vote[]
+}
+
+model Vote {
+  id           String     @id @default(uuid())
+  voteRoundId  String
+  voteRound    VoteRound  @relation(fields: [voteRoundId], references: [id])
+  voterId      String
+  voter        User       @relation(fields: [voterId], references: [id])
+  gamePlayerId String                                                    // ADD
+  gamePlayer   GamePlayer @relation(fields: [gamePlayerId], references: [id]) // ADD
+  inFavor      Boolean?
+  suspectId    String?
+  castedAt     DateTime   @default(now())
+  @@unique([voteRoundId, voterId])
+}
+
+// ════════════════════════════════════════════════
+//  CODE CHANGE  (every edit, with Ghost mode flags)
+// ════════════════════════════════════════════════
+
+model CodeChange {
+  id          String      @id @default(uuid())
+  gameId      String
+  game        Game        @relation(fields: [gameId], references: [id])
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  problemId   String?     // Ghost mode: which of the 4 problems was changed
+  problem     GameProblem? @relation(fields: [problemId], references: [id])
+  filename    String
+  diff        String      @db.Text
+  changeType  ChangeType  @default(MODIFY)
+
+  // Ghost mode visibility flags
+  isAnonymous Boolean     @default(false)  // chaos phase: shown as "Unknown edit"
+  isInvisible Boolean     @default(false)  // blind phase: not shown at all
+
+  // Saboteur ability (Social Deduction)
+  isSilent    Boolean     @default(false)  // doesn't appear in activity feed
+
+  timestamp   DateTime    @default(now())
+}
+
+// ════════════════════════════════════════════════
+//  ACTIVITY LOG  (suspicion feed shown to all players)
+// ════════════════════════════════════════════════
+
+model ActivityLog {
+  id             String     @id @default(uuid())
+  gameId         String
+  game           Game       @relation(fields: [gameId], references: [id])
+  userId         String
+  user           User       @relation(fields: [userId], references: [id])
+  changeType     ChangeType
+  filename       String
+  linesChanged   Int
+  diff           String     @db.Text
+  suspicionDelta Int        @default(0)   // +/- score, internal only
+  timestamp      DateTime   @default(now())
+}
+
+// ════════════════════════════════════════════════
+//  EXECUTION LOG  (sandboxed code runs)
+// ════════════════════════════════════════════════
+
+model ExecutionLog {
+  id          String   @id @default(uuid())
+  gameId      String
+  game        Game     @relation(fields: [gameId], references: [id])
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  problemId   String?  // Ghost mode: which problem was run
+  language    String
+  exitCode    Int
+  stdout      String?  @db.Text
+  stderr      String?  @db.Text  // sanitized before storing
+  testsPassed Int      @default(0)
+  testsFailed Int      @default(0)
+  executedAt  DateTime @default(now())
+}
+
+// ════════════════════════════════════════════════
+//  GHOST MODE — 4 assigned problems
+// ════════════════════════════════════════════════
+
+model GameProblem {
+  id           String     @id @default(uuid())
+  gameId       String
+  game         Game       @relation(fields: [gameId], references: [id])
+  assigneeId   String     @unique  // one problem per player, strictly
+  assignee     GamePlayer @relation("ProblemAssignee", fields: [assigneeId], references: [id])
+  filename     String
+  problemCode  String     @db.Text
+  isShared     Boolean    @default(false)  // shared util file — breaking this ripples to others
+  testsPassing Boolean    @default(false)
+  createdAt    DateTime   @default(now())
+
+  codeChanges  CodeChange[]
+}
+
+// ════════════════════════════════════════════════
+//  GHOST MODE — blame token usage log
+// ════════════════════════════════════════════════
+
+model BlameUsage {
+  id         String     @id @default(uuid())
+  gameId     String
+  usedById   String
+  usedBy     User       @relation(fields: [usedById], references: [id])
+  targetId   String     // GamePlayer who was blamed
+  target     GamePlayer @relation("BlameTarget", fields: [targetId], references: [id])
+  changeId   String     // CodeChange.id that was blamed
+  revealed   String     // the username that was exposed
+  usedAt     DateTime   @default(now())
+}
+
+// ════════════════════════════════════════════════
+//  RACE MODE — stability meter history
+// ════════════════════════════════════════════════
+
+model StabilityLog {
+  id          String   @id @default(uuid())
+  gameId      String
+  game        Game     @relation(fields: [gameId], references: [id])
+  value       Float    // 0.0 - 100.0
+  trend       String   // 'UP' | 'DOWN' | 'STABLE'
+  triggeredBy String   // userId who triggered the test run
+  timestamp   DateTime @default(now())
+}
+
+// ════════════════════════════════════════════════
+//  PLAYER PROGRESSION  (XP, level, rank, badges)
+// ════════════════════════════════════════════════
+
+model PlayerProgression {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id])
+  xp             Int      @default(0)
+  level          Int      @default(1)
+  rank           String   @default("Intern")
+  bugsFixed      Int      @default(0)
+  bugsIntroduced Int      @default(0)        // tracked when playing as Mafia
+  badgesEarned   String[] @default([])       // e.g. ["Bug Slayer", "Ghost", "Sherlock"]
+  updatedAt      DateTime @updatedAt
+}
+
+// ════════════════════════════════════════════════
+//  DIFFICULTY CONFIG  (seeded at startup)
+// ════════════════════════════════════════════════
+
+model DifficultyConfig {
+  id                   String     @id @default(uuid())
+  level                Difficulty @unique
+  bugCount             Int
+  filesCount           Int
+  timeLimitMinutes     Int
+  hintsAllowed         Int
+  testCount            Int
+  mafiaChangesPerRound Int        // max sabotage actions per Mafia player per round
+}

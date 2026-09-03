@@ -1,0 +1,33 @@
+### Register
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "devesh",
+  "email": "devesh@test.com",
+  "password": "test1234"
+}
+
+### Login
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "devesh@test.com",
+  "password": "test1234"
+}
+
+### Guest
+POST http://localhost:5000/api/auth/guest
+
+### Me
+GET http://localhost:5000/api/auth/me
+Authorization: Bearer <paste_access_token_here>
+
+### Refresh
+POST http://localhost:5000/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "jiyaandiramakesjira"
+}
