@@ -1,11 +1,9 @@
 const prisma = require("../../../config/prisma.js");
+const { checkWinConditionsAfterVote } = require("../../wincondition/services/wincondition.service.js");
 
 async function startVote({ gameId, nominatedUserId, round }) {
     const activeVote = await prisma.voteRound.findFirst({
-        where: {
-            gameId,
-            endTime: null,
-        },
+        where: { gameId, endTime: null },
     });
 
     if (activeVote) {
@@ -24,44 +22,22 @@ async function startVote({ gameId, nominatedUserId, round }) {
     return voteRound;
 }
 
-async function castVote({
-    voteRoundId,
-    voterId,
-    gamePlayerId,
-    inFavor,
-}) {
+async function castVote({ voteRoundId, voterId, gamePlayerId, inFavor }) {
     const voteRound = await prisma.voteRound.findUnique({
-        where: {
-            id: voteRoundId,
-        },
+        where: { id: voteRoundId },
     });
 
-    if (!voteRound) {
-        throw new Error("Vote round not found");
-    }
-
-    if (voteRound.endTime !== null) {
-        throw new Error("Vote has already ended");
-    }
+    if (!voteRound) throw new Error("Vote round not found");
+    if (voteRound.endTime !== null) throw new Error("Vote has already ended");
 
     const existingVote = await prisma.vote.findFirst({
-        where: {
-            voteRoundId,
-            voterId,
-        },
+        where: { voteRoundId, voterId },
     });
 
-    if (existingVote) {
-        throw new Error("Already voted");
-    }
+    if (existingVote) throw new Error("Already voted");
 
     const vote = await prisma.vote.create({
-        data: {
-            voteRoundId,
-            voterId,
-            gamePlayerId,
-            inFavor,
-        },
+        data: { voteRoundId, voterId, gamePlayerId, inFavor },
     });
 
     return vote;
@@ -69,26 +45,14 @@ async function castVote({
 
 async function resolveVote({ voteRoundId, io, roomCode }) {
     const voteRound = await prisma.voteRound.findUnique({
-        where: {
-            id: voteRoundId,
-        },
-        include: {
-            votes: true,
-        },
+        where: { id: voteRoundId },
+        include: { votes: true },
     });
 
-    if (!voteRound) {
-        throw new Error("Vote round not found");
-    }
+    if (!voteRound) throw new Error("Vote round not found");
 
-    const inFavorCount = voteRound.votes.filter(
-        (vote) => vote.inFavor === true
-    ).length;
-
-    const againstCount = voteRound.votes.filter(
-        (vote) => vote.inFavor === false
-    ).length;
-
+    const inFavorCount = voteRound.votes.filter((v) => v.inFavor === true).length;
+    const againstCount = voteRound.votes.filter((v) => v.inFavor === false).length;
     const total = voteRound.votes.length;
 
     let result;
@@ -111,13 +75,8 @@ async function resolveVote({ voteRoundId, io, roomCode }) {
     }
 
     await prisma.voteRound.update({
-        where: {
-            id: voteRoundId,
-        },
-        data: {
-            endTime: new Date(),
-            result,
-        },
+        where: { id: voteRoundId },
+        data: { endTime: new Date(), result },
     });
 
     io.to(roomCode).emit("vote_result", {
@@ -127,6 +86,9 @@ async function resolveVote({ voteRoundId, io, roomCode }) {
         against: againstCount,
     });
 
+    // check win conditions after every vote resolution
+    await checkWinConditionsAfterVote(voteRound.gameId, { io, roomCode });
+
     return {
         result,
         nominatedUserId: voteRound.nominatedUserId,
@@ -135,25 +97,14 @@ async function resolveVote({ voteRoundId, io, roomCode }) {
 
 async function getVoteStatus(voteRoundId) {
     const voteRound = await prisma.voteRound.findUnique({
-        where: {
-            id: voteRoundId,
-        },
-        include: {
-            votes: true,
-        },
+        where: { id: voteRoundId },
+        include: { votes: true },
     });
 
-    if (!voteRound) {
-        throw new Error("Vote round not found");
-    }
+    if (!voteRound) throw new Error("Vote round not found");
 
-    const inFavor = voteRound.votes.filter(
-        (vote) => vote.inFavor === true
-    ).length;
-
-    const against = voteRound.votes.filter(
-        (vote) => vote.inFavor === false
-    ).length;
+    const inFavor = voteRound.votes.filter((v) => v.inFavor === true).length;
+    const against = voteRound.votes.filter((v) => v.inFavor === false).length;
 
     return {
         voteRoundId: voteRound.id,
