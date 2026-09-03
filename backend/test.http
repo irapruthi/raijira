@@ -1,33 +1,47 @@
-### Register
-POST http://localhost:5000/api/auth/register
+### ─── AUTH ───────────────────────────────────────
+
+### Me (User 1)
+GET http://127.0.0.1:5000/api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODg0NTgxMTh9.Td53eFVac8CPfDtNZQGUGzYW6wW_C5S_zrTTP7MobnA
+
+### Refresh (User 1)
+POST http://127.0.0.1:5000/api/auth/refresh
 Content-Type: application/json
 
 {
-  "username": "devesh",
-  "email": "devesh@test.com",
-  "password": "test1234"
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODkwNjIwMTh9.8jzIqR-uT4WXyI3waEQRd9iOTGEhkoGC0tFBNF3HcrE"
 }
 
-### Login
-POST http://localhost:5000/api/auth/login
+### ─── ROOMS ────────────────────────────────────────
+
+### Create Room (User 1)
+POST http://127.0.0.1:5000/api/rooms
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODg0NTgxMTh9.Td53eFVac8CPfDtNZQGUGzYW6wW_C5S_zrTTP7MobnA
 
 {
-  "email": "devesh@test.com",
-  "password": "test1234"
+  "maxPlayers": 6,
+  "mafiaCount": 1,
+  "language": "javascript",
+  "timeLimitMinutes": 20,
+  "isPublic": true,
+  "mode": "SOCIAL_DEDUCTION",
+  "difficulty": "DEVELOPER"
 }
 
-### Guest
-POST http://localhost:5000/api/auth/guest
+### List Public Rooms
+GET http://127.0.0.1:5000/api/rooms
 
-### Me
-GET http://localhost:5000/api/auth/me
-Authorization: Bearer <paste_access_token_here>
+### Get Room
+GET http://127.0.0.1:5000/api/rooms/3B7F42
 
-### Refresh
-POST http://localhost:5000/api/auth/refresh
-Content-Type: application/json
+### Join Room (User 2)
+POST http://127.0.0.1:5000/api/rooms/3B7F42/join
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ1NzQ1OCwiZXhwIjoxNzg4NDU4MzU4fQ.-KMqEBh2z4PKT_BLEUc-iHAN_COx_RJs5D1i1OST0HE
 
-{
-  "refreshToken": "jiyaandiramakesjira"
-}
+### Leave Room (User 2)
+POST http://127.0.0.1:5000/api/rooms/3B7F42/leave
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ1NzQ1OCwiZXhwIjoxNzg4NDU4MzU4fQ.-KMqEBh2z4PKT_BLEUc-iHAN_COx_RJs5D1i1OST0HE
+
+### Health Check
+GET http://127.0.0.1:5000/health

@@ -160,37 +160,29 @@ model Game {
 
 model GamePlayer {
   id               String    @id @default(uuid())
-  gameId           String
-  game             Game      @relation(fields: [gameId], references: [id])
+  gameId           String?
+  game             Game?     @relation(fields: [gameId], references: [id])
   userId           String
   user             User      @relation(fields: [userId], references: [id])
-  roomId           String                                               
-    room             Room      @relation(fields: [roomId], references: [id]) // ADD
-  role             Role?               // set at game start, never exposed via REST
+  roomId           String
+  room             Room      @relation(fields: [roomId], references: [id])
+  role             Role?
   isEliminated     Boolean   @default(false)
-  isRevealed       Boolean   @default(false)    // role publicly shown (post-game or on elim)
+  isRevealed       Boolean   @default(false)
   isConnected      Boolean   @default(true)
   disconnectedAt   DateTime?
-
-  // Ability tracking (Social Deduction special roles)
   abilityUsed      Boolean   @default(false)
   abilityUsedAt    DateTime?
-
-  // Ghost mode
-  blameTokensLeft  Int       @default(1)        // each player gets 1 blame token
-
-  // Per-round sabotage limit (enforced server-side, reset each round)
+  blameTokensLeft  Int       @default(1)
   mafiaActionsLeft Int       @default(0)
-
-  xpEarned         Int       @default(0)        // awarded at game end
+  xpEarned         Int       @default(0)
   joinedAt         DateTime  @default(now())
 
-  @@unique([gameId, userId])
+  @@unique([roomId, userId])
 
-  // Relations
   votes           Vote[]
   blameTargets    BlameUsage[]  @relation("BlameTarget")
-  assignedProblem GameProblem?  @relation("ProblemAssignee") // Ghost mode
+  assignedProblem GameProblem?  @relation("ProblemAssignee")
 }
 
 // ════════════════════════════════════════════════
@@ -231,8 +223,8 @@ model Vote {
 
 model CodeChange {
   id          String      @id @default(uuid())
-  gameId      String
-  game        Game        @relation(fields: [gameId], references: [id])
+  gameId      String?
+  game        Game?        @relation(fields: [gameId], references: [id])
   userId      String
   user        User        @relation(fields: [userId], references: [id])
   problemId   String?     // Ghost mode: which of the 4 problems was changed
@@ -257,8 +249,8 @@ model CodeChange {
 
 model ActivityLog {
   id             String     @id @default(uuid())
-  gameId         String
-  game           Game       @relation(fields: [gameId], references: [id])
+  gameId         String?
+  game           Game?       @relation(fields: [gameId], references: [id])
   userId         String
   user           User       @relation(fields: [userId], references: [id])
   changeType     ChangeType

@@ -7,14 +7,19 @@ const http = require("http");
 const config = require("./config/env");
 const prisma = require("./config/prisma");
 const redis = require("./config/redis");
+
 const authRouter = require("./modules/auth/routes/auth.routes.js");
+const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
+
 const app = express();
 
 app.use(helmet());
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+
 app.use("/api/auth", authRouter);
+app.use("/api/rooms", roomsRouter);
 
 app.get("/health", (req, res) => {
     res.json({
@@ -25,7 +30,6 @@ app.get("/health", (req, res) => {
 
 app.use((err, req, res, next) => {
     console.error(err.message);
-
     return res.status(500).json({
         error: err.message,
     });
@@ -33,10 +37,7 @@ app.use((err, req, res, next) => {
 
 const server = http.createServer(app);
 
-module.exports = {
-    app,
-    server,
-};
+module.exports = { app, server };
 
 server.listen(config.PORT, () => {
     console.log(`Server running on port ${config.PORT}`);
