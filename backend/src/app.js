@@ -14,6 +14,7 @@ const editorRouter = require("./modules/editor/routes/editor.routes.js");
 const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
 const createExecutionRouter = require("./modules/execution/routes/execution.routes.js");
 const initSocket = require("./socket/socket.gateway");
+const activityRouter = require("./modules/activity/routes/activity.routes.js");
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use(express.static("./"));
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api", editorRouter);
+app.use("/api", activityRouter);
 
 app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });

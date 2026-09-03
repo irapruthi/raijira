@@ -35,3 +35,21 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmL
     { "id": "3", "input": "code mafia", "expectedOutput": "code mafia" }
   ]
 }
+
+
+
+### Log Activity
+POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/activity
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3NTU4LCJleHAiOjE3ODg0Njg0NTh9.WWvcL-GIAE-jwKoPJF7U2cygNdobuqkH5h-DXsdFraE
+
+{
+  "filename": "index.js",
+  "changeType": "MODIFY",
+  "linesChanged": 3,
+  "diff": "console.log('mafia was here')"
+}
+
+### Get Activity Feed
+GET http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/activity
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3NTU4LCJleHAiOjE3ODg0Njg0NTh9.WWvcL-GIAE-jwKoPJF7U2cygNdobuqkH5h-DXsdFraE
