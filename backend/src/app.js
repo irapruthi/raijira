@@ -24,7 +24,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
-app.use(express.static("./"));
+app.use(express.static("../frontend"));
 
 // routes that don't need io
 app.use("/api/auth", authRouter);
