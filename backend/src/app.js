@@ -11,7 +11,7 @@ const redis = require("./config/redis");
 const authRouter = require("./modules/auth/routes/auth.routes.js");
 const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
 const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
-
+const editorRouter = require("./modules/editor/routes/editor.routes.js");
 const initSocket = require("./socket/socket.gateway");
 
 const app = express();
@@ -22,6 +22,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.static("./"));
 
+app.use("/api", editorRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomsRouter);
 
