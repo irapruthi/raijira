@@ -7,16 +7,20 @@ const http = require("http");
 const config = require("./config/env");
 const prisma = require("./config/prisma");
 const redis = require("./config/redis");
+const initSocket = require("./socket/socket.gateway");
 
 const authRouter = require("./modules/auth/routes/auth.routes.js");
 const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
 
 const app = express();
 
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: false
+}));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
+app.use(express.static("./"));
 
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomsRouter);
@@ -36,6 +40,7 @@ app.use((err, req, res, next) => {
 });
 
 const server = http.createServer(app);
+const io = initSocket(server);
 
 module.exports = { app, server };
 

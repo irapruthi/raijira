@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Socket Test</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+
+<body>
+    <h1>Socket Test — check DevTools Console</h1>
+    <script>
+        const socket = io("http://localhost:5000", {
+            auth: {
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDYxMzcxLCJleHAiOjE3ODg0NjIyNzF9.Zk7tl53ly3PBZeUYxk7-xTIlOViARSz1YzDtwqOE6tc"
+            }
+        });
+
+        socket.on("connect", () => {
+            console.log("✅ Socket connected!", socket.id);
+
+            socket.emit("join_room", { roomCode: "3B7F42" });
+        });
+
+        socket.on("user_joined", (data) => {
+            console.log("👤 User joined:", data);
+        });
+
+        socket.on("connect_error", (error) => {
+            console.log("❌ Error:", error.message);
+        });
+
+        socket.on("disconnect", () => {
+            console.log("🔌 Disconnected");
+        });
+    </script>
+</body>
+
+</html>
