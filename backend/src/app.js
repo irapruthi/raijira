@@ -7,16 +7,16 @@ const http = require("http");
 const config = require("./config/env");
 const prisma = require("./config/prisma");
 const redis = require("./config/redis");
-const initSocket = require("./socket/socket.gateway");
 
 const authRouter = require("./modules/auth/routes/auth.routes.js");
 const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
+const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
+
+const initSocket = require("./socket/socket.gateway");
 
 const app = express();
 
-app.use(helmet({
-    contentSecurityPolicy: false
-}));
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
@@ -34,13 +34,16 @@ app.get("/health", (req, res) => {
 
 app.use((err, req, res, next) => {
     console.error(err.message);
-    return res.status(500).json({
+    return res.status(err.status || 500).json({
         error: err.message,
     });
 });
 
 const server = http.createServer(app);
+
 const io = initSocket(server);
+
+app.use("/api", createRolesRouter(io));
 
 module.exports = { app, server };
 

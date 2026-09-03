@@ -18,7 +18,7 @@ function initSocket(server) {
 
     io.on("connection", (socket) => {
         console.log("User connected: " + socket.user.username);
-
+        handleRoomEvents(socket, io);
         handleRoomEvents(socket, io);
         handleCodeEvents(socket, io);
         handleChatEvents(socket, io);

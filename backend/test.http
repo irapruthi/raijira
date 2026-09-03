@@ -1,26 +1,19 @@
-### ─── AUTH ───────────────────────────────────────
-
-### Me (User 1)
-GET http://127.0.0.1:5000/api/auth/me
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODg0NTgxMTh9.Td53eFVac8CPfDtNZQGUGzYW6wW_C5S_zrTTP7MobnA
-
-### Refresh (User 1)
-POST http://127.0.0.1:5000/api/auth/refresh
+### Step 1 - Login
+POST http://127.0.0.1:5000/api/auth/login
 Content-Type: application/json
 
 {
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODkwNjIwMTh9.8jzIqR-uT4WXyI3waEQRd9iOTGEhkoGC0tFBNF3HcrE"
+  "email": "ira@test.com",
+  "password": "titty1234"
 }
 
-### ─── ROOMS ────────────────────────────────────────
-
-### Create Room (User 1)
+### Step 2 - Create Room (copy fresh token from step 1)
 POST http://127.0.0.1:5000/api/rooms
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDU3MjE4LCJleHAiOjE3ODg0NTgxMTh9.Td53eFVac8CPfDtNZQGUGzYW6wW_C5S_zrTTP7MobnA
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
 
 {
-  "maxPlayers": 6,
+  "maxPlayers": 4,
   "mafiaCount": 1,
   "language": "javascript",
   "timeLimitMinutes": 20,
@@ -29,19 +22,26 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmL
   "difficulty": "DEVELOPER"
 }
 
-### List Public Rooms
-GET http://127.0.0.1:5000/api/rooms
+### Step 3 - Register second user and join room
+POST http://127.0.0.1:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "ira2@test.com",
+  "password": "titty1234"
+}
+
+### Step 4 - Join Room (use user 2 token + roomId from step 2)
+POST http://127.0.0.1:5000/api/rooms/0E8F1C/join
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ2NDYyNSwiZXhwIjoxNzg4NDY1NTI1fQ.RE5dNaBHkV7IMYaoFLxTjjro7jdpvQScIhkbxU6PthY
+
+### Step 5 - Start Game (use user 1 token + room UUID from step 2)
+POST http://127.0.0.1:5000/api/rooms/f8cf6e7b-044a-495b-9298-d3cdc37e37bc/start
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
 
 ### Get Room
-GET http://127.0.0.1:5000/api/rooms/3B7F42
+GET http://127.0.0.1:5000/api/rooms/0E8F1C
 
-### Join Room (User 2)
-POST http://127.0.0.1:5000/api/rooms/3B7F42/join
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ1NzQ1OCwiZXhwIjoxNzg4NDU4MzU4fQ.-KMqEBh2z4PKT_BLEUc-iHAN_COx_RJs5D1i1OST0HE
-
-### Leave Room (User 2)
-POST http://127.0.0.1:5000/api/rooms/3B7F42/leave
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ1NzQ1OCwiZXhwIjoxNzg4NDU4MzU4fQ.-KMqEBh2z4PKT_BLEUc-iHAN_COx_RJs5D1i1OST0HE
-
-### Health Check
-GET http://127.0.0.1:5000/health
+### Get My Role (User 1)
+GET http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/my-role
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
