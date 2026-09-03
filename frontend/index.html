@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODE MAFIA — FSD 04</title>
+
+<!-- Typography per brief: Black Ops One (headings/buttons) + Space Mono (code/data) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- Icon library -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+<style>
+/* ============================================================
+   DESIGN TOKENS — single source of truth.
+   If the PM confirms the other 3 hex codes, swap them here only.
+   ============================================================ */
+:root{
+  --bg:#080C14;            /* background */
+  --surface:#0D1520;       /* raised panel */
+  --amber:#C87941;         /* CTA / amber */
+  --amber-hi:#E59A63;      /* CTA hover / highlights */
+  --teal:#4ECDC4;          /* Teal / Accent */
+  --text:#EAE3D6;          /* primary text */
+  --muted:#6F7B8D;         /* secondary text */
+  --danger:#D4574A;        /* mafia / error semantics only */
+  --line:rgba(234,227,214,.09);
+  --glass:rgba(13,21,32,.55);
+  --font-d:'Black Ops One','Space Mono',monospace;
+  --font-m:'Space Mono','Courier New',monospace;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:var(--font-m); overflow:hidden;
+  -webkit-font-smoothing:antialiased; user-select:none;
+}
+::selection{background:rgba(200,121,65,.4)}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:1.5px solid rgba(200,121,65,.75);outline-offset:2px}
+.hidden{display:none!important}
+svg.lucide{stroke-width:1.75}
+
+/* ============================================================
+   BACKGROUND STACK
+   canvas = procedural city engine (fallback / "CITY" feed)
+   video  = PM's asset, auto-detected, fades in over the canvas
+   ============================================================ */
+#city{position:fixed;inset:0;z-index:0}
+.bg-video{position:fixed;inset:0;z-index:1;overflow:hidden;opacity:0;transition:opacity 1.4s ease;will-change:transform}
+.bg-video.on{opacity:1}
+.bg-video video{width:100%;height:100%;object-fit:cover;filter:saturate(.85) brightness(.68) contrast(1.06);transform:scale(1.45)}
+.bg-tint{position:fixed;inset:0;z-index:2;background:rgba(8,12,20,.60)}
+.bg-vig{position:fixed;inset:0;z-index:3;background:radial-gradient(ellipse at 50% 42%,transparent 55%,rgba(4,7,12,.62) 100%)}
+#scanlines{position:fixed;inset:0;z-index:4;opacity:.30;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.16) 0 1px,transparent 1px 3px)}
+
+/* ============================================================
+   AMORPHISM SPEC — dark glass for every floating panel
+   ============================================================ */
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(14px) saturate(1.3);
+  -webkit-backdrop-filter:blur(14px) saturate(1.3);
+  border:1px solid var(--line);
+}
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar{position:fixed;top:18px;left:18px;right:18px;height:60px;z-index:40;
+  border-radius:12px;display:flex;align-items:center;justify-content:space-between;padding:0 14px 0 18px}
+.tb-left{display:flex;align-items:center;gap:12px}
+.logo-mark{display:grid;place-items:center}
+.logo-text{font-family:var(--font-d);font-size:17px;letter-spacing:.08em}
+.logo-text em{font-style:normal;color:var(--amber-hi)}
+.logo-tag{font-family:var(--font-m);font-size:9px;letter-spacing:.22em;color:var(--amber);
+  border:1px solid rgba(200,121,65,.45);border-radius:5px;padding:3px 7px;margin-left:2px}
+.tb-right{display:flex;align-items:center;gap:8px}
+.tb-chip{display:flex;gap:8px;align-items:center;font-size:12px;padding:8px 12px;border-radius:8px;
+  color:var(--muted);border:1px solid transparent;transition:all .18s ease;letter-spacing:.06em}
+.tb-chip svg{width:14px;height:14px;color:var(--amber)}
+.tb-chip b{color:var(--text);font-weight:700}
+.tb-chip:hover{border-color:var(--line);color:var(--text);background:rgba(234,227,214,.04)}
+.tb-clock{font-size:11.5px;color:var(--muted);letter-spacing:.12em;margin:0 4px}
+.tb-icon{width:38px;height:38px;border-radius:8px;display:grid;place-items:center;color:var(--muted);
+  position:relative;transition:all .18s ease}
+.tb-icon svg{width:18px;height:18px}
+.tb-icon:hover{color:var(--text);background:rgba(234,227,214,.06)}
+.tb-icon .dot{position:absolute;top:9px;right:9px;width:6px;height:6px;border-radius:50%;
+  background:var(--amber-hi);box-shadow:0 0 0 2px rgba(12,18,28,.9)}
+.tb-avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--font-d);font-size:11px;letter-spacing:.05em;color:var(--amber-hi);
+  background:rgba(200,121,65,.12);border:1px solid rgba(200,121,65,.5);transition:all .18s ease}
+.tb-avatar:hover{background:rgba(200,121,65,.22);transform:translateY(-1px)}
+
+/* ============================================================
+   LEFT SIDEBAR — vertical glass strip
+   ============================================================ */
+.sidebar{position:fixed;left:18px;top:96px;bottom:114px;width:64px;z-index:40;
+  border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:20px;padding:14px 0}
+.side-sep{width:26px;height:1px;background:var(--line);margin:6px 0}
+.side-btn{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;
+  color:var(--muted);position:relative;transition:all .18s ease;flex-shrink:0}
+.side-btn svg{width:19px;height:19px}
+.side-btn:hover{color:var(--text);background:rgba(234,227,214,.06)}
+.side-btn.active{color:var(--amber-hi);background:rgba(200,121,65,.13)}
+.side-btn.active::before{content:'';position:absolute;left:0;top:11px;bottom:11px;width:3px;
+  border-radius:3px;background:var(--amber)}
+.side-btn::after{content:attr(data-tip);position:absolute;left:calc(100% + 14px);top:50%;
+  transform:translate(-6px,-50%);font-size:9.5px;letter-spacing:.18em;color:var(--text);
+  background:rgba(10,15,24,.94);border:1px solid var(--line);padding:6px 10px;border-radius:6px;
+  opacity:0;pointer-events:none;transition:all .18s ease;white-space:nowrap;z-index:45}
+.side-btn:hover::after{opacity:1;transform:translate(0,-50%)}
+.side-btn.push{margin-top:auto}
+
+/* ============================================================
+   CENTER STAGE — character + title
+   ============================================================ */
+.stage{position:fixed;left:98px;right:18px;top:96px;bottom:114px;z-index:10;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden}
+.stagetag{display:flex;gap:10px;align-items:center;font-size:11px;letter-spacing:.16em;
+  padding:8px 16px;border-radius:99px;transition:all .18s ease}
+.stagetag svg{width:13px;height:13px;color:var(--amber)}
+.stagetag b{color:var(--amber-hi);font-weight:700}
+.stagetag span{color:var(--muted)}
+.char-wrap{filter:drop-shadow(0 26px 34px rgba(0,0,0,.45));will-change:transform}
+.char-wrap svg{width:min(430px,54vh);height:auto;display:block}
+
+/* SVG character animation */
+#figure,.eyes,#hat,.ground-ring,#handL,#handR,.pt{transform-box:fill-box}
+#figure{transform-origin:center;animation:bob 4.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.eyes{transform-origin:center;animation:blink 5.6s infinite}
+@keyframes blink{0%,92.6%,100%{transform:scaleY(1)}94.6%{transform:scaleY(.08)}96.4%{transform:scaleY(1)}}
+#handL{animation:tap .42s ease-in-out infinite}
+#handR{animation:tap .42s ease-in-out .21s infinite}
+@keyframes tap{50%{transform:translateY(2.5px)}}
+#hat{transform-origin:50% 85%;transition:transform .28s ease}
+.char-wrap:hover #hat{transform:rotate(-5deg) translateY(-2px)}
+.char-wrap:hover #eyeL,.char-wrap:hover #eyeR{fill:#F7BE86}
+.ground-ring{transform-origin:center;animation:ringPulse 3.4s ease-in-out infinite}
+@keyframes ringPulse{0%,100%{transform:scale(1);stroke-opacity:.12}50%{transform:scale(1.045);stroke-opacity:.4}}
+.pt{opacity:0;animation:ptFloat 7s linear infinite;animation-delay:var(--d)}
+@keyframes ptFloat{0%{opacity:0;transform:translateY(0)}10%{opacity:.55}80%{opacity:.12}100%{opacity:0;transform:translateY(-48px)}}
+#cursor{animation:curBlink 1.05s steps(1) infinite}
+@keyframes curBlink{50%{opacity:0}}
+#screenText text{letter-spacing:.5px}
+.t-cmd{fill:var(--amber)}.t-out{fill:#7A879B}.t-ok{fill:var(--amber-hi)}
+
+.headline{font-family:var(--font-d);font-size:clamp(26px,3.4vw,46px);letter-spacing:.06em;text-align:center;line-height:1}
+.headline em{font-style:normal;color:var(--amber-hi)}
+.subline{font-size:11.5px;letter-spacing:.24em;color:var(--muted);display:flex;align-items:center;gap:10px}
+.subline b{color:var(--amber-hi)}
+.livedot{width:6px;height:6px;border-radius:50%;background:var(--amber-hi);animation:live 1.8s ease-in-out infinite}
+@keyframes live{50%{opacity:.25;transform:scale(.7)}}
+
+/* ============================================================
+   BOTTOM BAR — LVL badge + PLAY + mode
+   ============================================================ */
+.bottombar{position:fixed;left:98px;right:18px;bottom:18px;height:80px;z-index:40;border-radius:14px;
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 22px}
+.bb-left{display:flex;align-items:center;gap:14px}
+.lvl-hex{position:relative;width:46px;height:50px;display:grid;place-items:center}
+.lvl-hex svg{position:absolute;inset:0;width:100%;height:100%}
+.lvl-hex polygon{fill:rgba(200,121,65,.14);stroke:var(--amber);stroke-width:1.6}
+.lvl-hex b{font-family:var(--font-d);font-size:19px;color:var(--amber-hi)}
+.lvl-meta{display:flex;flex-direction:column;gap:4px}
+.lvl-line1{font-size:9.5px;letter-spacing:.2em;color:var(--text)}
+.lvl-line2{font-size:9px;letter-spacing:.12em;color:var(--muted)}
+.xpbar{width:150px;height:5px;border-radius:3px;background:rgba(234,227,214,.09);overflow:hidden}
+.xpbar i{display:block;height:100%;width:0;background:var(--amber);border-radius:3px;
+  transition:width 1.1s cubic-bezier(.3,.8,.3,1)}
+.xpbar.big{width:100%}
+.bb-center{display:flex;flex-direction:column;align-items:center;gap:8px;grid-column:2}
+.btn-play{font-family:var(--font-d);font-size:23px;letter-spacing:.16em;color:#1B0E04;
+  background:linear-gradient(180deg,var(--amber-hi),var(--amber));
+  padding:15px 56px;border-radius:12px;display:flex;align-items:center;gap:12px;
+  border:1px solid rgba(0,0,0,.18);box-shadow:0 6px 20px rgba(200,121,65,.22);
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.btn-play svg{width:20px;height:20px;stroke-width:2.4}
+.btn-play:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(200,121,65,.34);filter:brightness(1.06)}
+.btn-play:active{transform:translateY(0);filter:brightness(.94)}
+.play-hint{font-size:9.5px;letter-spacing:.24em;color:var(--muted)}
+.play-hint b{border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--text)}
+.bb-right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.mode-btn{display:flex;align-items:center;gap:10px;font-size:10px;letter-spacing:.2em;color:var(--muted);
+  border:1px solid var(--line);border-radius:8px;padding:9px 14px;transition:all .18s ease}
+.mode-btn b{color:var(--amber-hi);font-size:11px;letter-spacing:.14em}
+.mode-btn svg{width:12px;height:12px}
+.mode-btn:hover{border-color:rgba(200,121,65,.5);color:var(--text);background:rgba(200,121,65,.08)}
+.season{font-size:9px;letter-spacing:.16em;color:var(--muted)}
+
+/* ============================================================
+   NOTIFICATIONS DROPDOWN
+   ============================================================ */
+.dropdown{position:fixed;width:330px;z-index:55;border-radius:12px;
+  background:rgba(12,18,28,.9);backdrop-filter:blur(18px);border:1px solid var(--line);
+  box-shadow:0 22px 55px rgba(0,0,0,.5);opacity:0;transform:translateY(-6px);
+  pointer-events:none;transition:all .18s ease}
+.dropdown.on{opacity:1;transform:none;pointer-events:auto}
+.nd-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;
+  border-bottom:1px solid var(--line);font-size:9.5px;letter-spacing:.22em;color:var(--muted)}
+.nd-head b{color:var(--amber-hi)}
+#noteClear{font-size:9px;letter-spacing:.16em;color:var(--muted);transition:color .18s ease}
+#noteClear:hover{color:var(--amber-hi)}
+.nd-item{display:flex;gap:11px;padding:12px 14px;border-bottom:1px solid rgba(234,227,214,.05);align-items:flex-start}
+.nd-item svg{width:15px;height:15px;color:var(--amber);margin-top:1px;flex-shrink:0}
+.nd-item p{font-size:11px;color:var(--text);line-height:1.5}
+.nd-item time{display:block;color:var(--muted);font-size:9px;margin-top:4px;letter-spacing:.12em}
+.nd-x{margin-left:auto;color:var(--muted);opacity:.55;transition:all .18s ease;flex-shrink:0}
+.nd-x svg{width:13px;height:13px;color:var(--muted)}
+.nd-x:hover{opacity:1;color:var(--text)}
+.nd-empty{padding:24px;text-align:center;font-size:10.5px;letter-spacing:.14em;color:var(--muted)}
+
+/* ============================================================
+   MODAL SYSTEM — overlay is exactly rgba(0,0,0,0.5) per spec
+   ============================================================ */
+.overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,0.5);
+  display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.overlay.on{opacity:1;pointer-events:auto}
+.modal{width:440px;max-width:calc(100vw - 40px);max-height:calc(100vh - 130px);overflow:auto;
+  border-radius:14px;padding:24px 26px 26px;
+  background:rgba(12,18,28,.82);backdrop-filter:blur(20px) saturate(1.3);
+  -webkit-backdrop-filter:blur(20px) saturate(1.3);
+  border:1px solid var(--line);box-shadow:0 34px 90px rgba(0,0,0,.55)}
+.modal.pop{animation:pop .2s cubic-bezier(.2,.9,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:none}}
+.modal::-webkit-scrollbar{width:8px}
+.modal::-webkit-scrollbar-thumb{background:rgba(200,121,65,.25);border-radius:4px}
+.mo-head{display:flex;align-items:baseline;gap:12px;border-bottom:1px solid var(--line);
+  padding-bottom:14px;margin-bottom:16px;flex-wrap:wrap}
+.mo-title{font-family:var(--font-d);font-size:19px;letter-spacing:.05em}
+.mo-sub{font-size:9px;letter-spacing:.22em;color:var(--muted)}
+.mo-close{margin-left:auto;width:32px;height:32px;border-radius:8px;display:grid;place-items:center;
+  color:var(--muted);transition:all .18s ease}
+.mo-close svg{width:16px;height:16px}
+.mo-close:hover{color:var(--text);background:rgba(234,227,214,.07)}
+
+/* tabs */
+.mo-tabs{display:flex;gap:6px;background:rgba(234,227,214,.04);border:1px solid var(--line);
+  padding:4px;border-radius:10px;margin-bottom:18px}
+.tab{flex:1;font-size:10.5px;letter-spacing:.16em;padding:10px;border-radius:7px;
+  color:var(--muted);transition:all .18s ease}
+.tab:hover{color:var(--text)}
+.tab.active{background:rgba(200,121,65,.16);color:var(--amber-hi)}
+
+/* form fields */
+.field{display:flex;justify-content:space-between;align-items:center;padding:11px 0;
+  border-bottom:1px solid rgba(234,227,214,.05)}
+.field label,.lbl{font-size:9.5px;letter-spacing:.22em;color:var(--muted)}
+.stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.stepper button{width:32px;height:32px;display:grid;place-items:center;color:var(--muted);transition:all .15s ease}
+.stepper button svg{width:13px;height:13px}
+.stepper button:hover{color:var(--amber-hi);background:rgba(200,121,65,.1)}
+.stepper span{width:40px;text-align:center;font-weight:700;font-size:13px}
+.cycle-btn{display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.14em;color:var(--amber-hi);
+  border:1px solid rgba(200,121,65,.4);border-radius:8px;padding:8px 13px;transition:all .18s ease}
+.cycle-btn svg{width:12px;height:12px}
+.cycle-btn:hover{background:rgba(200,121,65,.1);border-color:rgba(200,121,65,.7)}
+
+/* CTA buttons */
+.btn-cta{font-family:var(--font-d);font-size:15px;letter-spacing:.1em;color:#1B0E04;
+  background:linear-gradient(180deg,var(--amber-hi),var(--amber));
+  border:1px solid rgba(0,0,0,.2);border-radius:10px;padding:14px 26px;
+  display:inline-flex;justify-content:center;align-items:center;gap:10px;width:100%;
+  box-shadow:0 5px 16px rgba(200,121,65,.2);transition:transform .18s ease,box-shadow .18s ease,filter .18s ease}
+.btn-cta svg{width:16px;height:16px;stroke-width:2.3}
+.btn-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(200,121,65,.32);filter:brightness(1.05)}
+.btn-cta:active{transform:translateY(0);filter:brightness(.94)}
+.btn-cta:disabled{opacity:.55;cursor:wait;transform:none}
+.btn-cta.alt{background:rgba(200,121,65,.1);color:var(--amber-hi);border-color:rgba(200,121,65,.5);box-shadow:none}
+.btn-cta.alt:hover{background:rgba(200,121,65,.2)}
+.btn-ghost{display:inline-flex;align-items:center;gap:9px;font-size:10.5px;letter-spacing:.18em;
+  color:var(--muted);border:1px solid var(--line);border-radius:9px;padding:12px 18px;
+  transition:all .18s ease}
+.btn-ghost svg{width:14px;height:14px}
+.btn-ghost:hover{color:var(--text);border-color:rgba(234,227,214,.22)}
+.btn-ghost.sm{padding:9px 14px}
+.spin{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* code input — 6 boxes + hidden capture input */
+.code-input{display:flex;gap:8px;justify-content:center;position:relative;margin:14px 0 4px}
+.code-input input{position:absolute;inset:0;opacity:0;color:transparent;font-size:16px;cursor:pointer}
+.cbox{width:46px;height:56px;border-radius:9px;background:rgba(234,227,214,.04);border:1px solid var(--line);
+  display:grid;place-items:center;font-family:var(--font-d);font-size:21px;transition:all .15s ease}
+.cbox.filled{border-color:rgba(200,121,65,.55);background:rgba(200,121,65,.08)}
+.cbox.cur{border-color:var(--amber-hi)}
+.code-input.focus .cbox.cur{box-shadow:inset 0 0 0 1px var(--amber-hi)}
+.code-input.shake{animation:shake .35s ease}
+@keyframes shake{20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.inline-msg{font-size:9.5px;letter-spacing:.16em;color:var(--muted);text-align:center;margin:8px 0 14px}
+.inline-msg.err{color:var(--danger)}
+
+/* lobby */
+.lobby-code{display:flex;align-items:center;gap:12px;justify-content:center;padding:14px;
+  border:1px dashed rgba(200,121,65,.5);border-radius:10px;background:rgba(200,121,65,.05)}
+.lobby-code span{font-size:9.5px;letter-spacing:.22em;color:var(--muted)}
+.lobby-code b{font-family:var(--font-d);font-size:26px;letter-spacing:.12em;color:var(--amber-hi)}
+.mini-btn{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;color:var(--muted);
+  border:1px solid var(--line);transition:all .18s ease}
+.mini-btn svg{width:14px;height:14px}
+.mini-btn:hover{color:var(--amber-hi);border-color:rgba(200,121,65,.5)}
+.lobby-hint{display:flex;align-items:center;gap:9px;justify-content:center;font-size:9.5px;
+  letter-spacing:.18em;color:var(--muted);margin:14px 0 4px}
+.lobby-hint svg{width:12px;height:12px;color:var(--amber);animation:live 1.6s ease-in-out infinite}
+.lobby-slots{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0 18px}
+.slot{display:flex;align-items:center;gap:9px;padding:10px 12px;border:1px dashed var(--line);
+  border-radius:8px;font-size:11px;color:var(--muted);letter-spacing:.08em;min-height:40px}
+.slot svg{width:14px;height:14px;flex-shrink:0}
+.slot.empty{animation:slotPulse 2s ease-in-out infinite}
+@keyframes slotPulse{50%{opacity:.45}}
+.slot.me{border:1px solid rgba(200,121,65,.6);border-style:solid;color:var(--text);background:rgba(200,121,65,.08)}
+.slot.me svg{color:var(--amber-hi)}
+.slot.filled{border-style:solid;color:var(--text)}
+.slot .tag{font-size:8.5px;letter-spacing:.16em;color:var(--amber-hi);border:1px solid rgba(200,121,65,.45);
+  padding:2px 6px;border-radius:4px;margin-left:auto}
+.lobby-actions{display:flex;gap:10px;align-items:center}
+.lobby-actions .btn-cta{width:auto;flex:1}
+.wait-host{flex:1;text-align:center;font-size:9.5px;letter-spacing:.18em;color:var(--amber-hi);
+  animation:slotPulse 1.6s ease-in-out infinite}
+
+/* leaderboard */
+#m-board{width:560px}
+.board-table{margin-top:2px}
+.brow{display:grid;grid-template-columns:34px 1fr 66px 70px 84px;padding:10px 8px;
+  border-bottom:1px solid rgba(234,227,214,.055);font-size:12px;align-items:center}
+.brow.head{color:var(--muted);font-size:8.5px;letter-spacing:.2em;border-bottom-color:var(--line)}
+.brow .num{text-align:right}.brow .rk{color:var(--muted)}
+.brow.top .rk,.brow.top .name{color:var(--amber-hi)}
+.brow.you{background:rgba(200,121,65,.09);border-left:2px solid var(--amber);border-radius:4px;margin:2px 0}
+.brow .name{display:flex;align-items:center;gap:8px}
+.brow .name svg{width:13px;height:13px;color:var(--amber)}
+.board-note{font-size:9px;letter-spacing:.18em;color:var(--muted);margin-top:14px;text-align:center}
+.board-note b{color:var(--amber-hi)}
+
+/* profile */
+#m-profile{width:460px}
+.pr-top{display:flex;gap:18px;align-items:center;margin-bottom:18px}
+.pr-avatar{width:64px;height:64px;border-radius:14px;display:grid;place-items:center;
+  font-family:var(--font-d);font-size:20px;color:var(--amber-hi);
+  background:rgba(200,121,65,.12);border:1px solid rgba(200,121,65,.5);flex-shrink:0}
+.pr-id{flex:1}
+.pr-edit{display:flex;gap:8px;margin:7px 0 5px}
+.pr-edit input{flex:1;background:rgba(234,227,214,.04);border:1px solid var(--line);border-radius:8px;
+  color:var(--text);font-family:var(--font-m);font-size:14px;font-weight:700;letter-spacing:.08em;
+  padding:10px 12px;transition:border-color .18s ease}
+.pr-edit input:focus{outline:0;border-color:var(--amber)}
+.pr-title{font-size:10px;letter-spacing:.14em;color:var(--muted)}
+.lvl-line{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.16em;
+  color:var(--muted);margin-bottom:6px}
+.lvl-line span:last-child{color:var(--amber-hi)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:18px}
+.stat{background:rgba(10,15,24,.72);padding:15px}
+.stat b{display:block;font-size:20px;font-weight:700;color:var(--text)}
+.stat span{font-size:8.5px;letter-spacing:.2em;color:var(--muted)}
+
+/* settings */
+#m-settings{width:420px}
+.set-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 0;
+  border-bottom:1px solid rgba(234,227,214,.055)}
+.set-row.no-line{border:0}
+.set-row label{font-size:12px;letter-spacing:.08em}
+.set-row small{display:block;color:var(--muted);font-size:9px;letter-spacing:.1em;margin-top:4px}
+.sw{width:44px;height:24px;border-radius:99px;background:rgba(234,227,214,.1);
+  border:1px solid var(--line);position:relative;transition:all .18s ease;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:2.5px;left:2.5px;width:17px;height:17px;border-radius:50%;
+  background:var(--muted);transition:all .18s ease}
+.sw.on{background:rgba(200,121,65,.35);border-color:rgba(200,121,65,.6)}
+.sw.on::after{left:22px;background:var(--amber-hi)}
+.seg{display:flex;gap:4px;background:rgba(234,227,214,.05);border:1px solid var(--line);
+  padding:4px;border-radius:8px;flex-shrink:0}
+.seg button{font-size:9.5px;letter-spacing:.12em;padding:7px 11px;border-radius:6px;
+  color:var(--muted);transition:all .15s ease}
+.seg button.on{background:rgba(200,121,65,.18);color:var(--amber-hi)}
+
+/* ============================================================
+   COUNTDOWN + TOASTS
+   ============================================================ */
+.countdown{position:fixed;inset:0;z-index:80;display:grid;place-items:center;
+  background:rgba(4,7,12,.74);opacity:0;pointer-events:none;transition:opacity .25s ease}
+.countdown.on{opacity:1}
+.countdown>div{text-align:center}
+.countdown b{display:block;font-family:var(--font-d);font-size:clamp(96px,15vw,160px);
+  color:var(--amber-hi);line-height:1}
+.countdown b.tick{animation:tick .25s cubic-bezier(.2,.9,.3,1)}
+@keyframes tick{from{transform:scale(1.4);opacity:.2}to{transform:scale(1);opacity:1}}
+.countdown span{font-size:10px;letter-spacing:.4em;color:var(--muted)}
+.toasts{position:fixed;right:20px;bottom:110px;z-index:90;display:flex;flex-direction:column;gap:10px}
+.toast{display:flex;gap:12px;align-items:center;background:rgba(12,18,28,.92);
+  backdrop-filter:blur(12px);border:1px solid var(--line);border-left:3px solid var(--amber);
+  padding:13px 16px;border-radius:10px;font-size:11.5px;letter-spacing:.04em;max-width:380px;
+  transform:translateX(24px);opacity:0;transition:all .22s ease;cursor:pointer}
+.toast.on{transform:none;opacity:1}
+.toast.err{border-left-color:var(--danger)}
+.toast svg{width:15px;height:15px;color:var(--amber);flex-shrink:0}
+.toast.err svg{color:var(--danger)}
+
+/* reduce-motion kill switch */
+.rm *,.rm{animation-play-state:paused!important}
+
+/* ============================================================
+   LOBBY MODE STYLES
+   ============================================================ */
+body.lobby-mode .bg-tint { background: rgba(4, 8, 18, 0.52); }
+body.lobby-mode .lobby-bg-gif { opacity: 1; }
+body.lobby-mode .bg-video { opacity: 0 !important; }
+.lobby-bg-gif { position: fixed; inset: 0; z-index: 1; opacity: 0; transition: opacity 1.4s ease; pointer-events: none; overflow: hidden; }
+.lobby-bg-gif img { width: 100%; height: 100%; object-fit: cover; filter: saturate(0.85) brightness(0.68) contrast(1.06); }
+body.lobby-mode main.stage { display: none; }
+body.lobby-mode footer.bottombar { display: none; }
+body.lobby-mode .sidebar { display: none; }
+body.lobby-mode .tb-chip, body.lobby-mode .tb-icon { display: none; }
+body.lobby-mode #clock { display: none; }
+body.lobby-mode #tbWaiting { display: inline-block; animation: slotPulse 1.5s ease-in-out infinite; color: var(--teal); font-family: var(--font-m); }
+#tbWaiting { display: none; font-size: 12px; letter-spacing: .12em; margin: 0 8px; }
+
+.lobby-stage { display: flex; flex-direction: column; align-items: center; justify-content: center; position: fixed; left: 18px; right: 18px; top: 96px; bottom: 18px; z-index: 10; gap: 14px; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+body.lobby-mode .lobby-stage { display: flex; opacity: 1; pointer-events: auto; }
+
+.ls-room { display: flex; align-items: center; gap: 14px; padding: 12px 24px; border-radius: 12px; margin-top: -30px; }
+.ls-room span { font-size: 11px; letter-spacing: .2em; color: var(--teal); font-family: var(--font-m); }
+.ls-room b { font-family: var(--font-m); font-size: 44px; letter-spacing: .16em; color: var(--text); }
+.ls-room button { width: 42px; height: 42px; border-radius: 10px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); transition: all .18s ease; background: rgba(234,227,214,.04); }
+.ls-room button:hover { color: var(--teal); border-color: rgba(78,205,196,.4); background: rgba(78,205,196,.08); }
+
+.ls-count { font-size: 13px; letter-spacing: .12em; color: var(--muted); display: flex; align-items: center; gap: 10px; margin-bottom: 6px; font-family: var(--font-m); }
+.ls-count i { font-style: normal; color: var(--teal); animation: slotPulse 2s ease-in-out infinite; font-size: 16px; }
+
+.typing-idle { animation: typing-idle 3s ease-in-out infinite; transform-origin: center bottom; margin: -20px 0; }
+@keyframes typing-idle { 0%, 100% { transform: translateY(0px) scale(0.95); } 50% { transform: translateY(-4px) scale(0.95); } }
+
+#charWrapLobby svg { transition: filter 2s ease; }
+.mafia-glow svg { filter: drop-shadow(0 0 15px rgba(255,40,40,.8)) drop-shadow(0 0 40px rgba(255,40,40,.4)); }
+
+.tip-card { width: 720px; text-align: center; padding: 0; border-radius: 14px; display: flex; flex-direction: column; gap: 10px; transition: opacity .4s ease; margin-top: 10px; min-height: 110px; justify-content: center; }
+.tip-badge { font-size: 10.5px; letter-spacing: .2em; font-weight: bold; }
+.tip-badge.dev { color: var(--teal); }
+.tip-badge.field { color: var(--amber); }
+.tip-text { font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.5; color: var(--text); }
+
+.btn-ready { font-family: var(--font-d); font-size: 22px; letter-spacing: .1em; color: #1B0E04; background: linear-gradient(180deg, var(--amber-hi), var(--amber)); padding: 16px 54px; border-radius: 12px; display: inline-flex; align-items: center; gap: 14px; border: 1px solid rgba(0,0,0,.2); box-shadow: 0 6px 20px rgba(200,121,65,.25); transition: all .18s ease; margin-top: 14px; }
+.btn-ready svg { width: 22px; height: 22px; }
+.btn-ready:hover { transform: translateY(-3px); filter: brightness(1.08); box-shadow: 0 12px 30px rgba(200,121,65,.4); }
+.btn-ready.ready { background: linear-gradient(180deg, var(--teal), #36B0A7); box-shadow: 0 6px 20px rgba(78,205,196,.25); color: #080C14; pointer-events: none; border-color: rgba(0,0,0,.3); }
+
+.flash-overlay { position: fixed; inset: 0; z-index: 999; background: rgba(8,12,20,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .4s ease; }
+.flash-overlay.on { opacity: 1; transition: opacity .1s ease; }
+.flash-overlay h1 { font-family: var(--font-d); font-size: 84px; color: var(--amber-hi); letter-spacing: .12em; text-align: center; text-shadow: 0 0 30px rgba(200,121,65,.7); transform: scale(.85); transition: transform 1.5s cubic-bezier(.2,.9,.3,1); }
+.flash-overlay.on h1 { transform: scale(1); }
+
+.role-reveal-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #04080E; opacity: 0; pointer-events: none; transition: opacity 1.2s ease; }
+.role-reveal-overlay.on { opacity: 1; pointer-events: auto; }
+.role-reveal-overlay h2 { font-size: 24px; letter-spacing: .4em; color: var(--muted); margin-bottom: 20px; font-family: var(--font-m); }
+.role-reveal-overlay h1 { font-size: 96px; letter-spacing: .15em; font-family: var(--font-d); margin: 0; }
+.role-reveal-overlay.role-operator { background: radial-gradient(circle at center, rgba(200,121,65,0.25) 0%, transparent 55%), #04080E; }
+.role-operator h1 { color: var(--amber-hi); text-shadow: 0 0 30px rgba(200,121,65,.6), 0 0 60px rgba(200,121,65,.3); }
+.role-reveal-overlay.role-mafia { background: radial-gradient(circle at center, rgba(255,40,40,0.22) 0%, transparent 55%), #04080E; }
+.role-mafia h1 { color: #FF4444; text-shadow: 0 0 30px rgba(255,40,40,.6), 0 0 60px rgba(255,40,40,.3); }
+
+/* ============================================================
+   GAME MODE STYLES
+   ============================================================ */
+body.game-mode .bg-tint { background: rgba(4, 8, 18, 0.72); }
+body.game-mode main.stage:not(.game-stage) { display: none; }
+body.game-mode .lobby-stage { display: none !important; }
+body.game-mode .lobby-bg-gif { opacity: 0 !important; }
+body.game-mode .bg-video { opacity: 1 !important; }
+body.game-mode footer.bottombar { display: none; }
+body.game-mode .sidebar { display: none; }
+
+.game-stage { position: fixed; left: 0; right: 0; top: 76px; bottom: 0; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity .3s ease; z-index: 10; }
+body.game-mode .game-stage { opacity: 1; pointer-events: auto; }
+
+#tbTimer { display: none; font-family: 'Black Ops One', cursive; font-size: 28px; color: var(--text); letter-spacing: .08em; text-align: center; position: absolute; left: 50%; transform: translateX(-50%); text-shadow: 0 0 10px rgba(0,0,0,.5); pointer-events: none; }
+body.game-mode #tbTimer { display: block; }
+#tbTimer.danger { color: var(--danger); animation: timerPulse 1s ease-in-out infinite; }
+#tbTimer.critical { animation: timerPulse 0.4s ease-in-out infinite; text-shadow: 0 0 15px var(--danger); }
+@keyframes timerPulse { 50% { opacity: 0.5; } }
+.role-badge { display: none; font-family: 'Space Mono', monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; margin-right: 12px; letter-spacing: .1em; border: 1px solid; vertical-align: middle; }
+body.game-mode .role-badge { display: inline-block; }
+.role-badge.op { color: var(--amber-hi); border-color: rgba(200,121,65,.4); background: rgba(200,121,65,.1); }
+.role-badge.maf { color: var(--danger); border-color: rgba(224,82,82,.4); background: rgba(224,82,82,.1); }
+body.game-mode #tbWaiting, body.game-mode #clock, body.game-mode .tb-chip, body.game-mode .tb-icon { display: none !important; }
+
+.mafia-wash { position: fixed; inset: 0; z-index: 5; background: rgba(224,82,82,.04); pointer-events: none; opacity: 0; transition: opacity 1s ease; }
+body.game-mode.mafia-active .mafia-wash { opacity: 1; }
+
+.game-layout { display: flex; width: 100%; height: calc(100% - 64px); padding: 16px 24px; gap: 20px; box-sizing: border-box; }
+.layout-mafia .game-left { width: 55%; display: flex; flex-direction: column; }
+.layout-mafia .game-right { width: 45%; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; padding-right: 8px; }
+.layout-debugger .game-left { width: 100%; display: flex; flex-direction: column; margin: 0 auto; max-width: 1200px; }
+.layout-debugger .game-right { display: none; }
+
+.glass-panel { background: rgba(10,15,30,.65); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(78,205,196,.15); border-radius: 12px; }
+
+.mission-brief { padding: 16px 20px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; transition: max-height 0.3s ease, padding 0.3s ease; overflow: hidden; max-height: 200px; }
+.mission-brief.collapsed { max-height: 48px; cursor: pointer; }
+.mission-brief.collapsed .mb-body { opacity: 0; pointer-events: none; }
+.mb-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
+.mb-header h3 { font-family: 'Black Ops One', cursive; font-size: 14px; margin: 0; color: var(--text); letter-spacing: .08em; }
+.mb-tag { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--teal); background: rgba(78,205,196,.1); padding: 2px 6px; border-radius: 4px; }
+.mb-body { font-family: 'Inter', sans-serif; font-size: 13.5px; line-height: 1.5; color: var(--text); margin: 0; transition: opacity 0.2s ease; }
+
+.editor-wrap { flex-grow: 1; position: relative; background: #050810; border: 1px solid rgba(78,205,196,.10); border-radius: 8px; overflow: hidden; display: flex; }
+.editor-lines { width: 40px; padding: 16px 0; background: rgba(0,0,0,.2); border-right: 1px solid rgba(78,205,196,.05); text-align: right; color: #3A4560; font-family: 'Space Mono', monospace; font-size: 14px; line-height: 1.6; user-select: none; }
+.editor-lines span { display: block; padding-right: 8px; }
+.editor-core { flex-grow: 1; position: relative; overflow: hidden; }
+.editor-core textarea, .editor-core pre { margin: 0; padding: 16px; border: none; width: 100%; height: 100%; box-sizing: border-box; font-family: 'Space Mono', monospace; font-size: 14px; line-height: 1.6; tab-size: 4; white-space: pre; overflow: auto; position: absolute; top: 0; left: 0; word-wrap: normal; overflow-wrap: normal; }
+.editor-core textarea { color: transparent; background: transparent; caret-color: var(--amber-hi); z-index: 2; resize: none; outline: none; }
+.editor-core pre { color: #F0EBE0; z-index: 1; pointer-events: none; }
+.hl-kw { color: var(--amber-hi); }
+.hl-str { color: var(--teal); }
+.hl-com { color: #4A5568; }
+
+.ro-panel { flex: 1; min-height: 180px; display: flex; flex-direction: column; background: #050810; border: 1px solid rgba(78,205,196,.10); border-radius: 8px; overflow: hidden; position: relative; transition: all 0.3s ease; }
+.ro-head { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: rgba(0,0,0,.3); border-bottom: 1px solid rgba(78,205,196,.05); }
+.ro-name { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.ro-dot { width: 6px; height: 6px; background: var(--teal); border-radius: 50%; box-shadow: 0 0 6px var(--teal); animation: blink 2s infinite; }
+.ro-btn { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--danger); background: none; border: 1px solid rgba(224,82,82,.3); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all .2s; }
+.ro-btn:hover { background: rgba(224,82,82,.1); }
+.ro-body { padding: 12px; font-family: 'Space Mono', monospace; font-size: 14px; line-height: 1.6; color: #c0c5ce; overflow: auto; flex-grow: 1; white-space: pre; }
+.ro-panel.sabotage-mode { border-color: rgba(224,82,82,.6); box-shadow: 0 0 15px rgba(224,82,82,.15); flex: 2; }
+.ro-panel.sabotage-mode .ro-head { background: rgba(224,82,82,.05); border-color: rgba(224,82,82,.2); }
+.ro-panel.sabotage-mode .ro-dot { background: var(--danger); box-shadow: 0 0 6px var(--danger); }
+.ro-panel.sabotage-mode .ro-body { color: #F0EBE0; }
+.ro-commit { display: none; width: 100%; padding: 10px; background: rgba(200,121,65,.1); color: var(--amber-hi); font-family: 'Space Mono', monospace; font-size: 11px; border: none; border-top: 1px solid rgba(200,121,65,.3); cursor: pointer; text-align: center; letter-spacing: .1em; transition: all .2s; }
+.ro-commit:hover { background: rgba(200,121,65,.2); }
+.ro-panel.sabotage-mode .ro-commit { display: block; }
+@keyframes blink { 50% { opacity: .3; } }
+
+.game-bottom { position: fixed; bottom: 0; left: 0; right: 0; height: 64px; background: rgba(10,15,30,.8); backdrop-filter: blur(16px); border-top: 1px solid rgba(78,205,196,.15); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; z-index: 20; }
+.gb-status { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: .05em; display: flex; align-items: center; gap: 12px; }
+.gb-chip { background: rgba(224,82,82,.1); border: 1px solid rgba(224,82,82,.3); color: var(--danger); padding: 4px 8px; border-radius: 4px; display: none; }
+body.game-mode.mafia-active .gb-chip { display: inline-block; }
+.gb-center { position: absolute; left: 50%; transform: translateX(-50%); }
+.btn-run { font-family: 'Black Ops One', cursive; font-size: 16px; color: #1B0E04; background: linear-gradient(180deg, var(--amber-hi), var(--amber)); padding: 10px 32px; border-radius: 8px; border: none; cursor: pointer; transition: all .2s; letter-spacing: .05em; box-shadow: 0 4px 12px rgba(200,121,65,.2); display: inline-flex; align-items: center; }
+.btn-run:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(200,121,65,.3); filter: brightness(1.1); }
+.btn-run svg { margin-right: 8px; width: 16px; height: 16px; }
+.btn-blame { font-family: 'Black Ops One', cursive; font-size: 14px; color: var(--danger); background: rgba(10,15,30,.6); border: 1px solid var(--danger); padding: 8px 20px; border-radius: 8px; cursor: pointer; transition: all .2s; letter-spacing: .05em; display: inline-flex; align-items: center; gap: 8px; }
+.btn-blame:hover { background: rgba(224,82,82,.15); box-shadow: 0 0 12px rgba(224,82,82,.2); }
+
+.test-results { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%) translateY(20px); width: 440px; background: rgba(10,15,30,.95); backdrop-filter: blur(20px); border: 1px solid rgba(78,205,196,.3); border-radius: 12px; padding: 20px; opacity: 0; pointer-events: none; transition: all .3s cubic-bezier(.2,.9,.3,1); z-index: 15; box-shadow: 0 10px 40px rgba(0,0,0,.5); }
+.test-results.on { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.test-results.fail { border-color: rgba(224,82,82,.4); }
+.tr-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,.1); padding-bottom: 12px; margin-bottom: 12px; }
+.tr-head h3 { font-family: 'Black Ops One', cursive; font-size: 16px; margin: 0; color: var(--text); letter-spacing: .05em; }
+.tr-close { background: none; border: none; color: var(--muted); cursor: pointer; font-family: 'Space Mono', monospace; font-size: 11px; }
+.tr-close:hover { color: var(--text); }
+.tr-list { display: flex; flex-direction: column; gap: 8px; font-family: 'Space Mono', monospace; font-size: 13px; margin-bottom: 16px; }
+.tr-row { display: flex; justify-content: space-between; padding: 6px 10px; background: rgba(0,0,0,.2); border-radius: 6px; }
+.tr-row.pass { color: var(--text); border-left: 3px solid var(--teal); }
+.tr-row.pass i { color: var(--teal); font-style: normal; margin-right: 8px; }
+.tr-row.fail { color: var(--text); border-left: 3px solid var(--danger); }
+.tr-row.fail i { color: var(--danger); font-style: normal; margin-right: 8px; }
+.tr-row span:last-child { color: var(--muted); font-size: 11px; }
+.tr-summary { text-align: center; font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: .05em; color: var(--teal); }
+.test-results.fail .tr-summary { color: var(--danger); }
+
+@media (prefers-reduced-motion: reduce) {
+  .typing-idle, .ls-count i, #tbWaiting { animation: none !important; }
+}
+
+/* ============================================================
+   RESPONSIVE — desktop-first, graceful downgrades
+   ============================================================ */
+@media (max-height:800px){
+  .char-wrap svg{width:min(330px,44vh)}
+  .stage{gap:10px}
+}
+@media (max-width:940px){
+  .sidebar{top:90px;left:18px;right:18px;bottom:auto;width:auto;height:54px;flex-direction:row;
+    justify-content:space-between;padding:0 8px}
+  .side-sep{width:1px;height:26px;margin:0 6px}
+  .side-btn::after{left:50%;top:calc(100% + 10px);transform:translate(-50%,-4px)}
+  .side-btn:hover::after{transform:translate(-50%,0)}
+  .side-btn.push{margin:0 0 0 auto}
+  .stage{left:18px;top:158px;bottom:100px}
+  .bottombar{left:18px;grid-template-columns:1fr;height:auto;padding:12px 16px;gap:8px}
+  .bb-center{grid-column:1}
+  .bb-left,.bb-right{display:none}
+}
+@media (max-width:560px){
+  .tb-clock,.tb-chip{display:none}
+  .headline{font-size:24px}
+  .cbox{width:40px;height:50px}
+  .lobby-slots{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ BACKGROUND: PM video (auto-detected) over city engine ============ -->
+<canvas id="city"></canvas>
+<div class="bg-video" id="bgVideoWrap">
+  <video id="bgVideo" autoplay muted loop playsinline preload="auto" poster="assets/city-bg-poster.jpg">
+    <source src="assets/bg.mp4" type="video/mp4">
+  </video>
+</div>
+<div class="lobby-bg-gif" id="lobbyBgGif">
+  <img src="assets/lobby-bg.gif" alt="Lobby Background">
+</div>
+<div class="bg-tint"></div>
+<div class="bg-vig"></div>
+<div id="scanlines"></div>
+
+<!-- ============ TOP BAR ============ -->
+<header class="topbar glass">
+  <div class="tb-left">
+    <span class="logo-mark">
+      <svg viewBox="0 0 38 26" width="30" height="21" aria-hidden="true">
+        <ellipse cx="19" cy="20" rx="16.5" ry="4.5" fill="#C87941"/>
+        <path d="M10.5 20 L12 7.5 C14 4.5 24 4.5 26 7.5 L27.5 20 Z" fill="#C87941"/>
+        <rect x="11.6" y="14.2" width="14.8" height="4.2" fill="#080C14" opacity=".9"/>
+      </svg>
+    </span>
+    <span class="logo-text">CODE<em>MAFIA</em></span>
+  </div>
+  <span id="tbTimer">20:00</span>
+  <div class="tb-right">
+    <span class="role-badge" id="tbRoleBadge"></span>
+    <button class="tb-chip" id="chipChips" title="Chips balance"><i data-lucide="gem"></i><b id="chipsVal">8,320</b></button>
+    <button class="tb-chip" id="chipPing" title="Connection"><i data-lucide="wifi"></i><b id="pingv">47ms</b></button>
+    <span class="tb-clock" id="clock">--:--:--</span>
+    <span id="tbWaiting">WAITING...</span>
+    <button class="tb-icon" id="btnBell" title="Notifications"><i data-lucide="bell"></i><b class="dot" id="bellDot"></b></button>
+    <button class="tb-icon" id="btnSound" title="Sound"></button>
+    <button class="tb-avatar" id="btnAvatar" title="Profile">GF</button>
+  </div>
+</header>
+
+<!-- ============ LEFT SIDEBAR ============ -->
+<nav class="sidebar glass" id="sidebar">
+  <button class="side-btn active" data-view="home"     data-tip="HOME"><i data-lucide="home"></i></button>
+  <button class="side-btn"        data-view="play"     data-tip="PLAY"><i data-lucide="gamepad-2"></i></button>
+  <button class="side-btn"        data-view="board"    data-tip="LADDER"><i data-lucide="trophy"></i></button>
+  <button class="side-btn"        data-view="profile"  data-tip="PROFILE"><i data-lucide="user"></i></button>
+  <button class="side-btn"        data-view="settings" data-tip="SETTINGS"><i data-lucide="settings"></i></button>
+  <div class="side-sep"></div>
+  <button class="side-btn push" id="btnLogout" data-tip="LOGOUT"><i data-lucide="log-out"></i></button>
+</nav>
+
+<!-- ============ CENTER STAGE ============ -->
+<main class="stage">
+  <div class="stagetag glass"><i data-lucide="terminal"></i><b id="tagName">GHOST_FOX</b><span>LVL 07 · ROLE PENDING</span></div>
+
+  <div class="char-wrap" id="charWrap">
+    <svg id="charSvg" viewBox="0 0 560 480" role="img" aria-label="Hatted operative typing at a terminal">
+      <defs>
+        <filter id="fGlow" x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="2.6" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="fSoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+        <radialGradient id="gScreen" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#C87941" stop-opacity=".26"/>
+          <stop offset="100%" stop-color="#C87941" stop-opacity="0"/>
+        </radialGradient>
+        <clipPath id="scrClip"><rect x="222" y="322" width="116" height="70" rx="2"/></clipPath>
+      </defs>
+
+      <!-- ground -->
+      <ellipse cx="280" cy="436" rx="150" ry="13" fill="#000" opacity=".5" filter="url(#fSoft)"/>
+      <ellipse class="ground-ring" cx="280" cy="436" rx="152" ry="13.5" fill="none" stroke="#C87941" stroke-width="1"/>
+
+      <g id="figure">
+        <!-- trench coat -->
+        <path d="M172 432 C178 354 196 314 226 300 C244 291 266 287 280 287 C294 287 316 291 334 300 C364 314 382 354 388 432 Z"
+              fill="#0B121F" stroke="rgba(234,227,214,.05)"/>
+        <path d="M246 414 C262 424 298 424 314 414" fill="none" stroke="rgba(229,154,99,.16)" stroke-width="2"/>
+        <!-- shirt, tie, collar -->
+        <path d="M256 294 C262 285 298 285 304 294 L298 322 L262 322 Z" fill="#05080D"/>
+        <path d="M274 290 L286 290 L283 300 L277 300 Z" fill="#7E2D2D"/>
+        <path d="M277 300 L283 300 L281 346 L280 352 L279 346 Z" fill="#7E2D2D"/>
+        <circle cx="280" cy="313" r="1.6" fill="#E59A63"/>
+        <path d="M256 294 L239 288 L248 307 Z" fill="#0F1826"/>
+        <path d="M304 294 L321 288 L312 307 Z" fill="#0F1826"/>
+        <!-- shadowed face -->
+        <ellipse cx="280" cy="250" rx="47" ry="46" fill="#060A10"/>
+        <ellipse cx="280" cy="280" rx="30" ry="15" fill="#C87941" opacity=".06"/>
+        <!-- eyes: JS tracks cursor, CSS blinks -->
+        <g id="eyeTrack">
+          <g class="eyes">
+            <rect id="eyeL" x="254" y="246" width="19" height="6.5" rx="3.25" fill="#E59A63" filter="url(#fGlow)"/>
+            <rect id="eyeR" x="287" y="246" width="19" height="6.5" rx="3.25" fill="#E59A63" filter="url(#fGlow)"/>
+          </g>
+        </g>
+        <!-- fedora (tips on hover) -->
+        <g id="hat">
+          <ellipse cx="280" cy="227" rx="52" ry="11" fill="#030509" opacity=".85"/>
+          <ellipse cx="280" cy="218" rx="86" ry="13" fill="#0D1522"/>
+          <path d="M194 222 A86 13 0 0 0 366 222" fill="none" stroke="rgba(229,154,99,.25)" stroke-width="1.5"/>
+          <path d="M234 216 C236 172 248 148 280 146 C312 148 324 172 326 216 C300 224 260 224 234 216 Z" fill="#0E1726"/>
+          <path d="M262 150 C270 145 290 145 298 150" fill="none" stroke="rgba(0,0,0,.55)" stroke-width="3"/>
+          <path d="M235 198 C258 207 302 207 325 198 L325 213 C302 222 258 222 235 213 Z" fill="#141E2D"/>
+          <path d="M238 205 C260 213 300 213 322 205" fill="none" stroke="rgba(200,121,65,.4)" stroke-width=".9" stroke-dasharray="2 3"/>
+        </g>
+        <!-- arms + typing hands -->
+        <path d="M214 312 C198 332 200 366 220 388 C227 395 238 393 239 384 C224 368 220 344 232 320 Z" fill="#0A0F1B"/>
+        <path d="M346 312 C362 332 360 366 340 388 C333 395 322 393 321 384 C336 368 340 344 328 320 Z" fill="#0A0F1B"/>
+        <g id="handL"><ellipse cx="230" cy="400" rx="13" ry="8" fill="#101A28"/></g>
+        <g id="handR"><ellipse cx="330" cy="400" rx="13" ry="8" fill="#101A28"/></g>
+      </g>
+
+      <!-- rising embers -->
+      <g fill="#E59A63">
+        <circle class="pt" style="--d:0s"   cx="198" cy="308" r="2.6"/>
+        <circle class="pt" style="--d:1.4s" cx="352" cy="286" r="2"/>
+        <circle class="pt" style="--d:2.6s" cx="370" cy="348" r="2.2"/>
+        <circle class="pt" style="--d:3.4s" cx="190" cy="366" r="2.4"/>
+        <circle class="pt" style="--d:4.6s" cx="248" cy="272" r="1.8"/>
+        <circle class="pt" style="--d:5.6s" cx="314" cy="264" r="2.1"/>
+      </g>
+
+      <!-- laptop with live terminal (JS types into it) -->
+      <ellipse cx="280" cy="396" rx="128" ry="44" fill="url(#gScreen)"/>
+      <rect x="216" y="316" width="128" height="82" rx="5" fill="#04070C" stroke="#1B2637" stroke-width="1.2"/>
+      <g clip-path="url(#scrClip)">
+        <g id="screenText" font-family="'Space Mono',monospace" font-size="9.5"></g>
+        <rect id="cursor" x="224" y="327" width="6" height="9" fill="#E59A63"/>
+        <polygon points="222,322 264,322 240,392 222,392" fill="rgba(234,227,214,.03)"/>
+      </g>
+      <rect x="216" y="396" width="128" height="2.5" fill="rgba(229,154,99,.22)"/>
+      <path d="M204 398 L356 398 L372 418 L188 418 Z" fill="#0C1320" stroke="rgba(234,227,214,.06)"/>
+      <line x1="222" y1="406" x2="342" y2="406" stroke="#1B2637" stroke-width="3.4" stroke-dasharray="5 4"/>
+    </svg>
+  </div>
+
+  <h1 class="headline">DEBUG OR <em>SABOTAGE</em></h1>
+  <p class="subline"><i class="livedot"></i>SEASON 04 — <b id="online">2,847</b> OPERATIVES ONLINE</p>
+</main>
+
+<!-- ============ BOTTOM BAR ============ -->
+<footer class="bottombar glass">
+  <div class="bb-left">
+    <div class="lvl-hex">
+      <svg viewBox="0 0 44 48" aria-hidden="true"><polygon points="22,2 41,13.5 41,34.5 22,46 3,34.5 3,13.5"/></svg>
+      <b id="lvlNum">7</b>
+    </div>
+    <div class="lvl-meta">
+      <span class="lvl-line1">LVL 07 · OPERATIVE</span>
+      <div class="xpbar"><i id="xpFill"></i></div>
+      <span class="lvl-line2">12,480 / 15,000 XP</span>
+    </div>
+  </div>
+  <div class="bb-center">
+    <button class="btn-play" id="btnPlay"><i data-lucide="play"></i>PLAY</button>
+    <span class="play-hint">PRESS <b>P</b> TO DEPLOY</span>
+  </div>
+  <div class="bb-right">
+    <button class="mode-btn" id="modeBtn" title="1 MAFIA · 6 CREW · CHAT ON">MODE<b id="modeLabel">CLASSIC</b><i data-lucide="repeat"></i></button>
+    <span class="season" id="season">SEASON ENDS 12D 07:42:16</span>
+  </div>
+</footer>
+
+<!-- ============ LOBBY STAGE ============ -->
+<main class="lobby-stage" id="stageLobby">
+  <div class="ls-room glass">
+    <span>> ROOM CODE</span><b id="lsRoomCode">XK-4821</b>
+    <button id="btnCopyRoom" title="Copy Room Code"><i data-lucide="copy"></i></button>
+  </div>
+  <div class="ls-count">
+    <i>●</i> <span id="lsCountText">2 / 4 OPERATIVES CONNECTED</span>
+  </div>
+  <div class="stagetag glass" style="margin-top: -4px;">
+    <i data-lucide="terminal"></i><b id="lsTagName">GHOST_FOX</b><span>LVL 07 · STAGING</span>
+  </div>
+  <div class="char-wrap typing-idle" id="charWrapLobby">
+    <!-- Cloned SVG goes here -->
+  </div>
+  <div class="tip-card glass" id="tipCard">
+    <div class="tip-badge dev" id="tipBadge">[ DEV TIP ]</div>
+    <div class="tip-text" id="tipText">Run your test case mentally before submitting</div>
+  </div>
+  <button class="btn-ready" id="btnReady"><i data-lucide="play"></i>READY TO DEPLOY</button>
+</main>
+
+<div class="flash-overlay" id="flashOverlay">
+  <h1>OPERATIVES ASSEMBLED</h1>
+</div>
+
+<div class="role-reveal-overlay" id="roleReveal">
+  <h2>YOUR ROLE</h2>
+  <h1 id="roleText">OPERATOR</h1>
+</div>
+
+<!-- ============ GAME STAGE ============ -->
+<div class="mafia-wash"></div>
+<main class="stage game-stage" id="stageGame">
+  <div class="game-layout layout-debugger" id="gameLayout">
+    <!-- LEFT: Personal Editor -->
+    <div class="game-left">
+      <div class="mission-brief glass-panel" id="missionBrief">
+        <div class="mb-header">
+          <h3>MISSION BRIEF</h3>
+          <span class="mb-tag">[ PYTHON ]</span>
+        </div>
+        <p class="mb-body">Fix the binary search function — it returns incorrect indices for edge cases and infinite loops on missing targets.</p>
+      </div>
+      <div class="editor-wrap">
+        <div class="editor-lines" id="edLines"><span>1</span></div>
+        <div class="editor-core">
+          <textarea id="edInput" spellcheck="false"></textarea>
+          <pre><code id="edOutput"></code></pre>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RIGHT: Mafia Sabotage Panels -->
+    <div class="game-right" id="mafiaPanels">
+      <!-- Generated via JS -->
+    </div>
+  </div>
+  
+  <div class="game-bottom">
+    <div class="gb-status">
+      <span id="gbSaved">LAST SAVED JUST NOW</span>
+      <span class="gb-chip" id="gbSabotageLog">⚑ 0 DEPLOYED</span>
+    </div>
+    <div class="gb-center">
+      <button class="btn-run" id="btnRunTests"><i data-lucide="play"></i>RUN TESTS</button>
+    </div>
+    <button class="btn-blame" id="btnBlame">⚑ BLAME</button>
+  </div>
+  
+  <div class="test-results" id="testResults">
+    <div class="tr-head">
+      <h3>TEST RESULTS</h3>
+      <button class="tr-close" id="btnTrClose">[ CLOSE ]</button>
+    </div>
+    <div class="tr-list" id="trList">
+      <!-- populated by JS -->
+    </div>
+    <div class="tr-summary" id="trSummary">2 / 4 PASSING · FIX AND RERUN</div>
+  </div>
+</main>
+
+<!-- ============ NOTIFICATIONS ============ -->
+<div class="dropdown" id="notifPanel">
+  <div class="nd-head"><span>NOTIFICATIONS <b id="noteCount">3</b></span><button id="noteClear">CLEAR ALL</button></div>
+  <div id="noteList"></div>
+</div>
+
+<!-- ============ MODALS (overlay: rgba(0,0,0,0.5) per spec) ============ -->
+<div class="overlay" id="overlay">
+
+  <!-- PLAY -->
+  <section class="modal glass" id="m-play" hidden aria-label="Deploy mission">
+    <header class="mo-head">
+      <h2 class="mo-title">DEPLOY MISSION</h2>
+      <span class="mo-sub">CO-OP DEBUGGING · 4-8 OPERATIVES</span>
+      <button class="mo-close" data-close><i data-lucide="x"></i></button>
+    </header>
+
+    <div class="mo-tabs" id="playTabs">
+      <button class="tab active" data-tab="host">HOST A ROOM</button>
+      <button class="tab" data-tab="join">JOIN ROOM</button>
+    </div>
+
+    <div id="pane-host">
+      <div class="field"><label>OPERATIVES</label>
+        <div class="stepper" data-key="ops" data-range="4,8">
+          <button data-step="-1" aria-label="fewer"><i data-lucide="minus"></i></button><span>6</span>
+          <button data-step="1" aria-label="more"><i data-lucide="plus"></i></button>
+        </div>
+      </div>
+      <div class="field"><label>GAME MODE</label>
+        <button class="cycle-btn" id="hostMode" title="1 MAFIA · 6 CREW · CHAT ON">CLASSIC <i data-lucide="repeat"></i></button>
+      </div>
+      <div class="field"><label>DEBUG ROUNDS</label>
+        <div class="stepper" data-key="rounds" data-range="1,5">
+          <button data-step="-1" aria-label="fewer"><i data-lucide="minus"></i></button><span>3</span>
+          <button data-step="1" aria-label="more"><i data-lucide="plus"></i></button>
+        </div>
+      </div>
+      <button class="btn-cta" id="btnCreate" style="margin-top:18px"><i data-lucide="plus"></i>CREATE ROOM</button>
+    </div>
+
+    <div id="pane-join" hidden>
+      <label class="lbl">ROOM CODE</label>
+      <div class="code-input" id="codeWrap">
+        <input id="codeInput" type="text" inputmode="latin" autocomplete="off" spellcheck="false" aria-label="room code">
+        <b class="cbox"></b><b class="cbox"></b><b class="cbox"></b><b class="cbox"></b><b class="cbox"></b><b class="cbox"></b>
+      </div>
+      <p class="inline-msg" id="joinMsg">ENTER THE 6-CHARACTER CODE FROM YOUR HOST.</p>
+      <button class="btn-cta alt" id="btnJoin"><i data-lucide="log-in"></i>JOIN ROOM</button>
+    </div>
+
+    <div id="lobby" hidden>
+      <div class="lobby-code">
+        <span>ROOM</span><b id="lobbyCode">———</b>
+        <button class="mini-btn" id="btnCopy" title="Copy code"><i data-lucide="copy"></i></button>
+      </div>
+      <p class="lobby-hint"><i data-lucide="radio"></i><span id="lobbyStatus">WAITING FOR OPERATIVES</span></p>
+      <div class="lobby-slots" id="lobbySlots"></div>
+      <div class="lobby-actions">
+        <button class="btn-cta" id="btnStart"><i data-lucide="play"></i>START MATCH</button>
+        <p class="wait-host" id="waitHost" hidden>WAITING FOR HOST TO DEPLOY…</p>
+        <button class="btn-ghost" id="btnLeave"><i data-lucide="log-out"></i>LEAVE</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD -->
+  <section class="modal glass" id="m-board" hidden aria-label="Leaderboard">
+    <header class="mo-head">
+      <h2 class="mo-title">TOP OPERATIVES</h2>
+      <span class="mo-sub">SEASON 04 · RANKED LADDER</span>
+      <button class="mo-close" data-close><i data-lucide="x"></i></button>
+    </header>
+    <div class="board-table" id="boardTable"></div>
+    <p class="board-note">TOP 10 OF <b>2,847</b> — LADDER RESETS AT SEASON END</p>
+  </section>
+
+  <!-- PROFILE -->
+  <section class="modal glass" id="m-profile" hidden aria-label="Profile">
+    <header class="mo-head">
+      <h2 class="mo-title">OPERATIVE DOSSIER</h2>
+      <span class="mo-sub">PROFILE</span>
+      <button class="mo-close" data-close><i data-lucide="x"></i></button>
+    </header>
+    <div class="pr-top">
+      <div class="pr-avatar" id="prAvatar">GF</div>
+      <div class="pr-id">
+        <label class="lbl">CODENAME</label>
+        <div class="pr-edit">
+          <input id="nameInput" maxlength="12" spellcheck="false" autocomplete="off">
+          <button class="mini-btn" id="btnSaveName" title="Save codename"><i data-lucide="check"></i></button>
+        </div>
+        <span class="pr-title">"GHOST OF THE STACK"</span>
+      </div>
+    </div>
+    <div class="lvl-line"><span>LVL 07 — OPERATIVE</span><span>12,480 / 15,000 XP</span></div>
+    <div class="xpbar big"><i id="prXpFill"></i></div>
+    <div class="stats">
+      <div class="stat"><b>142</b><span>MATCHES</span></div>
+      <div class="stat"><b>1,208</b><span>BUGS FIXED</span></div>
+      <div class="stat"><b>37</b><span>MAFIA CATCHES</span></div>
+      <div class="stat"><b>61%</b><span>WIN RATE</span></div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="modal glass" id="m-settings" hidden aria-label="Settings">
+    <header class="mo-head">
+      <h2 class="mo-title">SYSTEM SETTINGS</h2>
+      <span class="mo-sub">LOCAL PREFERENCES</span>
+      <button class="mo-close" data-close><i data-lucide="x"></i></button>
+    </header>
+    <div class="set-row"><div><label>SOUND FX</label><small>UI CLICKS, ALERTS, COUNTDOWNS</small></div>
+      <button class="sw" role="switch" data-key="sound"></button></div>
+    <div class="set-row"><div><label>REDUCE MOTION</label><small>PAUSES IDLE &amp; BACKGROUND ANIMATION</small></div>
+      <button class="sw" role="switch" data-key="reduceMotion"></button></div>
+    <div class="set-row"><div><label>SCANLINES</label><small>CRT OVERLAY ON THE FEED</small></div>
+      <button class="sw" role="switch" data-key="scanlines"></button></div>
+    <div class="set-row"><div><label>BACKGROUND FEED</label><small>PM VIDEO / FALLBACK CITY ENGINE</small></div>
+      <div class="seg">
+        <button data-bg="auto">AUTO</button><button data-bg="city">CITY</button><button data-bg="off">OFF</button>
+      </div></div>
+    <div class="set-row no-line"><div><label>LOCAL DATA</label><small>STORED ON THIS DEVICE ONLY</small></div>
+      <button class="btn-ghost sm" id="btnReset">WIPE DATA</button></div>
+  </section>
+</div>
+
+<!-- ============ COUNTDOWN + TOASTS ============ -->
+<div class="countdown" id="countdown"><div><b>3</b><span>DEPLOYING TO MATCH SERVER</span></div></div>
+<div class="toasts" id="toasts"></div>
+
+<script>
+/* ================================================================
+   CODE MAFIA — home screen runtime
+   Backend seams (swap these for real API calls later):
+     enterLobby()  -> POST /rooms            (host) / join
+     startMatch()  -> POST /rooms/:id/start
+   ================================================================ */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const rand = (a,b) => a + Math.random()*(b-a);
+const icons = () => { if (window.lucide) lucide.createIcons(); };
+const store = {
+  get(k,d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+
+/* ---------- state ---------- */
+const DEF_PROFILE  = { name:'GHOST_FOX', lvl:7, xp:12480, xpMax:15000 };
+const DEF_SETTINGS = { sound:true, reduceMotion:false, scanlines:true, bg:'auto' };
+const state = {
+  profile : Object.assign({}, DEF_PROFILE,  store.get('cm_profile', {})),
+  settings: Object.assign({}, DEF_SETTINGS, store.get('cm_settings',{})),
+  ops:6, rounds:3, mode:0, lobby:null, videoOK:true
+};
+const MODES = ['CLASSIC','BLITZ','CHAOS'];
+const MODE_DESC = ['1 MAFIA · 6 CREW · CHAT ON','10-MIN ROUNDS · FAST PATCHES','3 MAFIA · NO CHAT · PURE CHAOS'];
+
+/* ---------- sound (tiny WebAudio blips, no assets) ---------- */
+let AC = null;
+function beep(f=660, d=.05, type='square', v=.04){
+  if (!state.settings.sound) return;
+  try{
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    if (AC.state === 'suspended') AC.resume();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001, AC.currentTime + d);
+    o.connect(g).connect(AC.destination);
+    o.start(); o.stop(AC.currentTime + d);
+  }catch(e){}
+}
+document.addEventListener('click', e => { if (e.target.closest('button')) beep(600,.04,'square',.03); }, true);
+
+/* ---------- toasts ---------- */
+function toast(msg, kind='info', ms=3600){
+  const box = $('#toasts');
+  while (box.children.length >= 4) box.firstChild.remove();
+  const t = document.createElement('div');
+  t.className = 'toast' + (kind === 'err' ? ' err' : '');
+  t.innerHTML = `<i data-lucide="${kind==='err'?'shield-alert':kind==='ok'?'check':'radio'}"></i><span>${msg}</span>`;
+  box.appendChild(t); icons();
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('on')));
+  if (kind === 'err') beep(170,.13,'sawtooth',.05);
+  else if (kind === 'ok') { beep(740,.05); setTimeout(()=>beep(980,.07),70); }
+  else beep(560,.04,'triangle',.03);
+  const kill = () => { t.classList.remove('on'); setTimeout(()=>t.remove(),240); };
+  t.addEventListener('click', kill);
+  setTimeout(kill, ms);
+}
+
+/* ---------- modal manager ---------- */
+let currentModal = null;
+function openModal(id){
+  closeDropdown();
+  const m = $('#'+id);
+  $$('.modal').forEach(x => x.hidden = (x !== m));
+  $('#overlay').classList.add('on');
+  m.classList.remove('pop'); void m.offsetWidth; m.classList.add('pop');
+  currentModal = id;
+  const f = m.querySelector('input, .btn-cta, .tab');
+  if (f) f.focus({ preventScroll:true });
+  if (id === 'm-profile') setTimeout(()=> { $('#prXpFill').style.width = pct()+'%'; }, 60);
+  beep(520,.06);
+}
+function closeModal(){
+  if (!currentModal) return;
+  $('#'+currentModal).hidden = true;
+  $('#overlay').classList.remove('on');
+  currentModal = null;
+  setActive('home');
+  beep(390,.05);
+}
+ $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeModal(); });
+ $$('[data-close]').forEach(b => b.addEventListener('click', closeModal));
+
+/* ---------- sidebar ---------- */
+function setActive(v){ $$('.side-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === v)); }
+ $$('.side-btn[data-view]').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.view;
+  if (v === 'home'){ closeModal(); setActive('home'); return; }
+  setActive(v);
+  if (v === 'play') openPlay(); else openModal('m-' + v);
+}));
+ $('#btnLogout').addEventListener('click', () =>
+  toast(`SESSION CLEARED — see you in the stack, ${state.profile.name}`));
+
+/* ---------- keyboard ---------- */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){
+    if ($('#notifPanel').classList.contains('on')) closeDropdown();
+    else if (currentModal) closeModal();
+  }
+  if ((e.key === 'p' || e.key === 'P') && !currentModal &&
+      document.activeElement.tagName !== 'INPUT') openPlay();
+});
+
+/* ---------- topbar live data ---------- */
+function tickClock(){
+  const d = new Date();
+  $('#clock').textContent = [d.getHours(),d.getMinutes(),d.getSeconds()]
+    .map(n => String(n).padStart(2,'0')).join(':');
+}
+const pct = () => Math.round(state.profile.xp / state.profile.xpMax * 100);
+
+function startTimers(){
+  tickClock(); setInterval(tickClock, 1000);
+  setInterval(() => { $('#pingv').textContent = Math.round(rand(38,74)) + 'ms'; }, 3000);
+  let online = 2847;
+  setInterval(() => {
+    online = Math.max(2400, online + Math.round(rand(-6,9)));
+    $('#online').textContent = online.toLocaleString('en-US');
+  }, 5000);
+  let s = 12*86400 + 7*3600 + 42*60 + 16;
+  setInterval(() => {
+    s--;
+    const d = Math.floor(s/86400), h = String(Math.floor(s%86400/3600)).padStart(2,'0'),
+          m = String(Math.floor(s%3600/60)).padStart(2,'0'), x = String(s%60).padStart(2,'0');
+    $('#season').textContent = `SEASON ENDS ${d}D ${h}:${m}:${x}`;
+  }, 1000);
+}
+
+ $('#chipChips').addEventListener('click', () =>
+  toast('8,320 CHIPS — earn more by shipping clean patches'));
+ $('#chipPing').addEventListener('click', () =>
+  toast(`ROUTE EDGE-ASIA · ${$('#pingv').textContent} · PACKET LOSS 0.0%`));
+ $('#btnAvatar').addEventListener('click', () => { setActive('profile'); openModal('m-profile'); });
+
+/* ---------- notifications ---------- */
+let notes = [
+  { icon:'zap',          text:'SEASON 04 IS LIVE — ranked ladder reset, new Mafia pool.', time:'2H AGO' },
+  { icon:'bug',          text:'Mafia activity detected in repo #4821. Three suspects flagged.', time:'6H AGO' },
+  { icon:'crown',        text:'You reached LVL 7 — title "GHOST OF THE STACK" unlocked.', time:'1D AGO' }
+];
+function renderNotes(){
+  const list = $('#noteList');
+  if (!notes.length){
+    list.innerHTML = `<div class="nd-empty">ALL CLEAR — NOTHING TO REPORT, OPERATIVE.</div>`;
+  } else {
+    list.innerHTML = notes.map((n,i) => `
+      <div class="nd-item">
+        <i data-lucide="${n.icon}"></i>
+        <div><p>${n.text}</p><time>${n.time}</time></div>
+        <button class="nd-x" data-x="${i}" aria-label="dismiss"><i data-lucide="x"></i></button>
+      </div>`).join('');
+  }
+  $('#bellDot').style.display = notes.length ? '' : 'none';
+  $('#noteCount').textContent = notes.length;
+  icons();
+}
+function closeDropdown(){ $('#notifPanel').classList.remove('on'); }
+ $('#btnBell').addEventListener('click', e => {
+  e.stopPropagation();
+  const p = $('#notifPanel');
+  if (p.classList.contains('on')) return closeDropdown();
+  const r = $('#btnBell').getBoundingClientRect();
+  p.style.top  = (r.bottom + 12) + 'px';
+  p.style.left = Math.max(16, r.left - 290) + 'px';
+  p.classList.add('on');
+});
+ $('#noteList').addEventListener('click', e => {
+  const x = e.target.closest('.nd-x'); if (!x) return;
+  notes.splice(+x.dataset.x, 1); renderNotes();
+});
+ $('#noteClear').addEventListener('click', () => { notes = []; renderNotes(); });
+document.addEventListener('click', e => {
+  if ($('#notifPanel').classList.contains('on') &&
+      !e.target.closest('#notifPanel') && !e.target.closest('#btnBell')) closeDropdown();
+});
+
+/* ---------- play modal: tabs, steppers, modes ---------- */
+ $$('.tab').forEach(t => t.addEventListener('click', () => {
+  $$('.tab').forEach(x => x.classList.toggle('active', x === t));
+  $('#pane-host').hidden = t.dataset.tab !== 'host';
+  $('#pane-join').hidden = t.dataset.tab !== 'join';
+  if (t.dataset.tab === 'join') $('#codeInput').focus();
+}));
+
+ $$('.stepper').forEach(st => {
+  const out = st.querySelector('span'), key = st.dataset.key;
+  const [min,max] = st.dataset.range.split(',').map(Number);
+  out.textContent = state[key];
+  st.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    state[key] = Math.min(max, Math.max(min, state[key] + (+b.dataset.step)));
+    out.textContent = state[key];
+  }));
+});
+
+function cycleMode(){
+  state.mode = (state.mode + 1) % MODES.length;
+  const m = MODES[state.mode], d = MODE_DESC[state.mode];
+  $('#modeLabel').textContent = m;
+  $('#hostMode').firstChild.textContent = m + ' ';
+  $('#modeBtn').title = $('#hostMode').title = d;
+}
+ $('#modeBtn').addEventListener('click', cycleMode);
+ $('#hostMode').addEventListener('click', cycleMode);
+
+/* ---------- room code input ---------- */
+const cIn = $('#codeInput'), cWrap = $('#codeWrap'), boxes = $$('.cbox');
+function renderBoxes(){
+  boxes.forEach((b,i) => {
+    b.textContent = cIn.value[i] || '';
+    b.classList.toggle('filled', !!cIn.value[i]);
+    b.classList.toggle('cur', i === cIn.value.length);
+  });
+}
+cWrap.addEventListener('click', () => cIn.focus());
+cIn.addEventListener('input', () => {
+  cIn.value = cIn.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+  renderBoxes();
+});
+cIn.addEventListener('keydown', e => { if (e.key === 'Enter') tryJoin(); });
+cIn.addEventListener('focus', () => cWrap.classList.add('focus'));
+cIn.addEventListener('blur',  () => cWrap.classList.remove('focus'));
+
+/* ---------- lobby flow (mocked backend) ---------- */
+const POOL = ['NULL_PTR','K4R3N','D3BUG_K1NG','R3DACT3D','SUDO_SAM','SEGFAULT_SUE'];
+let joinSim = null;
+
+function genCode(){
+  const A = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; let s = '';
+  for (let i = 0; i < 6; i++) s += A[Math.floor(Math.random()*A.length)];
+  return s;
+}
+function slotHTML(name, cls, tag, icon){
+  return `<div class="slot ${cls}"><i data-lucide="${icon}"></i><span>${name}</span>${tag ? `<b class="tag">${tag}</b>` : ''}</div>`;
+}
+function renderSlots(total, host){
+  $('#lobbySlots').innerHTML =
+    (host ? slotHTML(state.profile.name, 'me', 'HOST', 'terminal')
+          : slotHTML('V0LTAGE', 'filled', 'HOST', 'user') + slotHTML(state.profile.name, 'me', 'YOU', 'terminal')) +
+    Array.from({ length: total - (host ? 1 : 2) }, () => slotHTML('AWAITING…', 'empty', '', 'user')).join('');
+  icons();
+}
+function updateLobbyStatus(){
+  const total = state.lobby.total, inL = $$('#lobbySlots .slot').filter(s => !s.classList.contains('empty')).length;
+  $('#lobbyStatus').textContent = `WAITING FOR OPERATIVES — ${inL}/${total} IN LOBBY`;
+}
+function initLobbyStage() {
+  $('#charWrapLobby').innerHTML = $('#charWrap').innerHTML;
+  
+  $('#btnCopyRoom').addEventListener('click', async () => {
+    const c = state.lobby ? state.lobby.code : '';
+    try{ await navigator.clipboard.writeText(c); } catch(e){}
+    const btn = $('#btnCopyRoom');
+    const oldHtml = btn.innerHTML;
+    btn.innerHTML = 'COPIED ✓';
+    btn.style.color = 'var(--teal)';
+    btn.style.width = 'auto';
+    btn.style.padding = '0 12px';
+    setTimeout(() => {
+      btn.innerHTML = oldHtml;
+      btn.style.color = '';
+      btn.style.width = '';
+      btn.style.padding = '';
+    }, 1500);
+  });
+  
+  $('#btnReady').addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    if (btn.classList.contains('ready')) return;
+    btn.classList.add('ready');
+    btn.innerHTML = '✓ STANDING BY';
+    // If host, this could change to START MISSION logic
+    if (state.lobby && state.lobby.host) {
+      setTimeout(() => startMatch(), 2000); // trigger start match
+    }
+  });
+}
+
+const TIPS = [
+  { text: "Check variable names carefully — a single character swap is enough to break logic", type: "DEV TIP", class: "dev" },
+  { text: "Run your test case mentally before submitting", type: "DEV TIP", class: "dev" },
+  { text: "If your code was passing and suddenly isn't — someone may have visited", type: "DEV TIP", class: "dev" },
+  { text: "Read the problem statement twice. The bug is often in your assumption, not your code", type: "DEV TIP", class: "dev" },
+  { text: "Subtle bugs are invisible bugs. A wrong operator is harder to spot than missing code", type: "FIELD NOTE", class: "field" },
+  { text: "The best sabotage looks exactly like a typo", type: "FIELD NOTE", class: "field" },
+  { text: "Trust no one who finishes suspiciously early", type: "FIELD NOTE", class: "field" },
+  { text: "One character. That's all it takes", type: "FIELD NOTE", class: "field" }
+];
+let tipIndex = 0;
+let tipInterval;
+
+function rotateTip() {
+  const card = $('#tipCard');
+  card.style.opacity = '0';
+  setTimeout(() => {
+    tipIndex = (tipIndex + 1) % TIPS.length;
+    const tip = TIPS[tipIndex];
+    $('#tipBadge').textContent = `[ ${tip.type} ]`;
+    $('#tipBadge').className = `tip-badge ${tip.class}`;
+    $('#tipText').textContent = tip.text;
+    card.style.opacity = '1';
+  }, 400);
+}
+
+function flashOperatives() {
+  if (state.settings.reduceMotion) return;
+  const f = $('#flashOverlay');
+  f.classList.add('on');
+  
+  const isMafia = Math.random() > 0.5;
+  const rr = $('#roleReveal');
+  const rt = $('#roleText');
+  const charLobby = $('#charWrapLobby');
+  
+  if (isMafia) {
+    rr.className = 'role-reveal-overlay role-mafia';
+    rt.textContent = 'MAFIA';
+    charLobby.classList.add('mafia-glow');
+  } else {
+    rr.className = 'role-reveal-overlay role-operator';
+    rt.textContent = 'OPERATOR';
+    charLobby.classList.remove('mafia-glow');
+  }
+
+  setTimeout(() => { 
+    f.classList.remove('on'); 
+    rr.classList.add('on');
+    setTimeout(() => { 
+      rr.classList.remove('on');
+      initGameStage(isMafia ? 'MAFIA' : 'OPERATOR');
+    }, 5000);
+  }, 1800);
+}
+
+function enterLobby(code, host){
+  state.lobby = { code, host, total: host ? state.ops : 4 };
+  closeModal();
+  document.body.classList.add('lobby-mode');
+  
+  $('#lsRoomCode').textContent = code.slice(0,3) + '-' + code.slice(3);
+  $('#lsTagName').textContent = state.profile.name.toUpperCase();
+  
+  const btn = $('#btnReady');
+  btn.classList.remove('ready');
+  btn.innerHTML = host ? '<i data-lucide="play"></i>WAITING FOR OPERATIVES...' : '<i data-lucide="play"></i>READY TO DEPLOY';
+  icons();
+
+  clearInterval(joinSim);
+  let connected = host ? 1 : 2;
+  $('#lsCountText').textContent = `${connected} / ${state.lobby.total} OPERATIVES CONNECTED`;
+  
+  joinSim = setInterval(() => {
+    if (connected >= state.lobby.total) {
+      clearInterval(joinSim);
+      if (host) { btn.innerHTML = '<i data-lucide="play"></i>START MISSION'; icons(); }
+      return;
+    }
+    connected++;
+    $('#lsCountText').textContent = `${connected} / ${state.lobby.total} OPERATIVES CONNECTED`;
+    if (connected === state.lobby.total) {
+      setTimeout(flashOperatives, 300);
+      if (host) { btn.innerHTML = '<i data-lucide="play"></i>START MISSION'; icons(); }
+    }
+  }, 2400);
+
+  clearInterval(tipInterval);
+  tipInterval = setInterval(rotateTip, 7000);
+}
+
+function leaveLobby(silent){
+  clearInterval(joinSim); joinSim = null; state.lobby = null;
+  clearInterval(tipInterval);
+  document.body.classList.remove('lobby-mode');
+  $('#charWrapLobby').classList.remove('mafia-glow');
+  cIn.value = ''; renderBoxes();
+  $('#joinMsg').className = 'inline-msg';
+  $('#joinMsg').textContent = 'ENTER THE 6-CHARACTER CODE FROM YOUR HOST.';
+  if (!silent) toast('LEFT THE LOBBY');
+}
+async function tryJoin(){
+  const v = cIn.value;
+  if (v.length < 6){
+    const msg = $('#joinMsg');
+    msg.className = 'inline-msg err';
+    msg.textContent = 'CODE MUST BE 6 CHARACTERS — CHECK WITH YOUR HOST.';
+    cWrap.classList.add('shake'); setTimeout(()=>cWrap.classList.remove('shake'), 400);
+    beep(170,.13,'sawtooth',.05);
+    return;
+  }
+  const btn = $('#btnJoin'), old = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" class="spin"></i>LINKING…'; icons();
+  await wait(900);
+  btn.disabled = false; btn.innerHTML = old; icons();
+  enterLobby(v, false);
+}
+function loading(btn, label){
+  const old = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i data-lucide="loader" class="spin"></i>${label}`; icons();
+  return () => { btn.disabled = false; btn.innerHTML = old; icons(); };
+}
+ $('#btnCreate').addEventListener('click', async () => {
+  const undo = loading($('#btnCreate'), 'ALLOCATING…');
+  await wait(900); undo();
+  const code = genCode();
+  enterLobby(code, true);
+  toast(`ROOM ${code.slice(0,3)}-${code.slice(3)} CREATED — share it with your crew`, 'ok');
+});
+ $('#btnJoin').addEventListener('click', tryJoin);
+ $('#btnCopy').addEventListener('click', async () => {
+  const c = state.lobby ? state.lobby.code : '';
+  try{ await navigator.clipboard.writeText(c); toast('ROOM CODE COPIED — ' + c, 'ok'); }
+  catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = c; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('ROOM CODE COPIED — ' + c, 'ok'); }
+    catch(e2){ toast('CLIPBOARD BLOCKED — code: ' + c, 'err'); }
+    ta.remove();
+  }
+});
+ $('#btnLeave').addEventListener('click', () => leaveLobby(false));
+
+/* ---------- countdown -> backend handoff ---------- */
+async function startMatch(){               // <-- backend seam: POST /rooms/:id/start
+  closeModal();
+  const cd = $('#countdown'), num = cd.querySelector('b');
+  cd.classList.add('on');
+  for (const n of ['3','2','1']){
+    num.textContent = n;
+    num.classList.remove('tick'); void num.offsetWidth; num.classList.add('tick');
+    beep(440,.09); await wait(760);
+  }
+  num.textContent = 'GO'; num.classList.remove('tick'); void num.offsetWidth; num.classList.add('tick');
+  beep(880,.16); await wait(520);
+  cd.classList.remove('on');
+  toast('BACKEND OFFLINE — FSD match server not connected yet. Frontend flow is ready to wire in.', 'err', 5200);
+}
+ $('#btnStart').addEventListener('click', startMatch);
+
+function openPlay(){ leaveLobby(true); openModal('m-play'); setActive('play'); }
+ $('#btnPlay').addEventListener('click', openPlay);
+
+/* ---------- leaderboard ---------- */
+const BOARD = [
+  ['V0LTAGE','1,842','61','214-89'],
+  ['NULL_PTR','1,703','57','201-77'],
+  ['D3BUG_K1NG','1,655','52','196-84'],
+  ['SUDO_SAM','1,491','49','178-71'],
+  ['SEGFAULT_SUE','1,377','44','170-80'],
+  ['K4R3N','1,244','41','162-75'],
+  [null,'1,208','37','142-89'],        /* null = you */
+  ['R3DACT3D','1,110','35','155-90'],
+  ['HEAP_LORD','987','31','140-86'],
+  ['0xB1T','901','28','133-81']
+];
+function renderBoard(){
+  $('#boardTable').innerHTML =
+    `<div class="brow head"><span>#</span><span>OPERATIVE</span><span class="num">FIXES</span><span class="num">CATCHES</span><span class="num">W-L</span></div>` +
+    BOARD.map((r,i) => {
+      const you = r[0] === null;
+      const name = you ? state.profile.name : r[0];
+      return `<div class="brow${i<3?' top':''}${you?' you':''}">
+        <span class="rk">${String(i+1).padStart(2,'0')}</span>
+        <span class="name">${you ? `<i data-lucide="terminal"></i>` : i===0 ? `<i data-lucide="crown"></i>` : ''}${name}${you ? ' <b class="tag">YOU</b>' : ''}</span>
+        <span class="num">${r[1]}</span><span class="num">${r[2]}</span><span class="num">${r[3]}</span>
+      </div>`;
+    }).join('');
+  icons();
+}
+
+/* ---------- profile ---------- */
+function syncProfileUI(){
+  const p = state.profile;
+  $('#tagName').textContent = p.name;
+  $('#btnAvatar').textContent = p.name.slice(0,2);
+  $('#prAvatar').textContent  = p.name.slice(0,2);
+  $('#nameInput').value = p.name;
+  renderBoard();
+}
+ $('#btnSaveName').addEventListener('click', () => {
+  const v = $('#nameInput').value.trim().toUpperCase().replace(/[^A-Z0-9_]/g,'').slice(0,12);
+  if (v.length < 3){ toast('CODENAME NEEDS 3-12 CHARS (A-Z, 0-9, UNDERSCORE)', 'err'); return; }
+  state.profile.name = v;
+  store.set('cm_profile', state.profile);
+  syncProfileUI();
+  toast('CODENAME UPDATED — WELCOME, ' + v, 'ok');
+});
+
+/* ---------- settings ---------- */
+function applySettings(){
+  const s = state.settings;
+  document.body.classList.toggle('rm', s.reduceMotion);
+  $('#scanlines').style.display = s.scanlines ? '' : 'none';
+  $('#btnSound').innerHTML = `<i data-lucide="${s.sound ? 'volume-2' : 'volume-x'}"></i>`;
+  $$('.sw').forEach(sw => sw.classList.toggle('on', !!s[sw.dataset.key]));
+  $$('.seg button').forEach(b => b.classList.toggle('on', b.dataset.bg === s.bg));
+  applyBg();
+  needStatic = true;
+  icons();
+}
+ $$('.sw').forEach(sw => sw.addEventListener('click', () => {
+  state.settings[sw.dataset.key] = !state.settings[sw.dataset.key];
+  store.set('cm_settings', state.settings);
+  applySettings();
+}));
+ $$('.seg button').forEach(b => b.addEventListener('click', () => {
+  state.settings.bg = b.dataset.bg;
+  store.set('cm_settings', state.settings);
+  applySettings();
+}));
+ $('#btnSound').addEventListener('click', () => {
+  state.settings.sound = !state.settings.sound;
+  store.set('cm_settings', state.settings);
+  applySettings();
+});
+ $('#btnReset').addEventListener('click', () => {
+  ['cm_profile','cm_settings'].forEach(k => { try{ localStorage.removeItem(k); }catch(e){} });
+  state.profile  = Object.assign({}, DEF_PROFILE);
+  state.settings = Object.assign({}, DEF_SETTINGS);
+  syncProfileUI(); applySettings();
+  toast('LOCAL DATA WIPED — DEFAULTS RESTORED', 'ok');
+});
+
+/* ================================================================
+   CITY ENGINE — animated fallback background
+   3 parallax skyline layers, lit windows, rain, traffic, fog
+   ================================================================ */
+const cv = $('#city'), cc = cv.getContext('2d');
+let W = 0, H = 0, layers = [], drops = [], cars = [], stars = [];
+let mx = 0, my = 0, pmx = 0, pmy = 0, ex = 0, ey = 0, lastP = 99;
+let needStatic = true;
+
+function mkLayer(o){
+  const arr = []; let x = -60;
+  while (x < W + 60){
+    const w = rand(o.wMin, o.wMax), h = rand(o.hMin, o.hMax) * H;
+    const b = { x, w, h, y: o.base - h, wins: [], ant: Math.random() < .22 && h > H * .42 };
+    const cols = Math.floor((w - 10) / 11), rows = Math.floor((h - 14) / 15);
+    for (let c = 0; c < cols; c++) for (let r = 0; r < rows; r++){
+      if (Math.random() < o.winP)
+        b.wins.push({ ox: 6 + c*11, oy: 8 + r*15, a: o.winA * rand(.6, 1.3), amber: Math.random() < .6, seed: Math.random()*10 });
+    }
+    arr.push(b); x += w + rand(6, 26);
+  }
+  return { par:o.par, col:o.col, winW:o.winW, winH:o.winH, arr };
+}
+function buildCity(){
+  layers = [
+    mkLayer({ par:4,  col:'#0A0F1A', hMin:.16, hMax:.34, wMin:50, wMax:110, winP:.20, winA:.22, winW:2, winH:3, base:H-16 }),
+    mkLayer({ par:11, col:'#090E18', hMin:.28, hMax:.52, wMin:60, wMax:140, winP:.24, winA:.30, winW:3, winH:4, base:H-12 }),
+    mkLayer({ par:24, col:'#070C14', hMin:.42, hMax:.72, wMin:70, wMax:170, winP:.10, winA:.50, winW:4, winH:5, base:H-8  })
+  ];
+  drops = Array.from({ length:120 }, () => ({ x:Math.random()*W, y:Math.random()*H, l:rand(9,20), s:rand(9,16) }));
+  cars  = Array.from({ length:9 },  () => ({ x:Math.random()*W, dir:Math.random()<.5?-1:1, y:H-rand(4,9), s:rand(1.5,4.5) }));
+  stars = Array.from({ length:70 }, () => ({ x:Math.random()*W, y:Math.random()*H*.4, r:Math.random()<.85?.9:1.5, p:Math.random()*6 }));
+}
+function resize(){
+  const dpr = Math.min(devicePixelRatio || 1, 1.5);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  cc.setTransform(dpr, 0, 0, dpr, 0, 0);
+  buildCity(); needStatic = true;
+}
+addEventListener('resize', resize);
+addEventListener('pointermove', e => { mx = (e.clientX/innerWidth - .5)*2; my = (e.clientY/innerHeight - .5)*2; });
+
+function drawLayer(L, t){
+  const off = pmx * L.par;
+  cc.fillStyle = L.col;
+  for (const b of L.arr){
+    cc.fillRect(b.x + off, b.y, b.w, b.h + 22);
+    if (b.ant){
+      cc.fillRect(b.x + off + b.w/2 - 1, b.y - 18, 2, 18);
+      cc.fillStyle = `rgba(226,87,76,${Math.sin(t/700 + b.x) > .55 ? .9 : .12})`;
+      cc.fillRect(b.x + off + b.w/2 - 2, b.y - 22, 4, 4);
+      cc.fillStyle = L.col;
+    }
+  }
+  for (const b of L.arr) for (const w of b.wins){
+    const fl = Math.sin(t/900 + w.seed*13) > .985 ? 1.8 : 1;
+    cc.globalAlpha = Math.min(.85, w.a * fl);
+    cc.fillStyle = w.amber ? '#C87941' : '#E8DEC8';
+    cc.fillRect(b.x + off + w.ox, b.y + w.oy, L.winW, L.winH);
+  }
+  cc.globalAlpha = 1;
+}
+function draw(t){
+  const g = cc.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#070B13'); g.addColorStop(.6,'#0A101D'); g.addColorStop(1,'#0E1727');
+  cc.fillStyle = g; cc.fillRect(0,0,W,H);
+  const rg = cc.createRadialGradient(W/2,H,40, W/2,H,H*.7);
+  rg.addColorStop(0,'rgba(200,121,65,.10)'); rg.addColorStop(1,'rgba(200,121,65,0)');
+  cc.fillStyle = rg; cc.fillRect(0,0,W,H);
+  for (const s of stars){
+    cc.globalAlpha = .22 + .34*Math.abs(Math.sin(t/1400 + s.p));
+    cc.fillStyle = '#DCE3EE'; cc.fillRect(s.x, s.y, s.r, s.r);
+  }
+  cc.globalAlpha = 1;
+  drawLayer(layers[0], t);
+  const fg = cc.createLinearGradient(0, H*.45, 0, H*.8);
+  fg.addColorStop(0,'rgba(10,15,26,0)'); fg.addColorStop(1,'rgba(10,15,26,.5)');
+  cc.fillStyle = fg; cc.fillRect(0, H*.45, W, H*.35);
+  drawLayer(layers[1], t);
+  drawLayer(layers[2], t);
+  cc.fillStyle = 'rgba(200,121,65,.05)'; cc.fillRect(0, H-12, W, 12);
+  for (const c of cars){
+    c.x += c.s * c.dir;
+    if (c.x < -80) c.x = W + 80; if (c.x > W + 80) c.x = -80;
+    cc.strokeStyle = c.dir > 0 ? 'rgba(240,228,205,.5)' : 'rgba(214,84,72,.45)';
+    cc.lineWidth = 1.6;
+    cc.beginPath(); cc.moveTo(c.x, c.y); cc.lineTo(c.x - c.dir*22, c.y); cc.stroke();
+    cc.fillStyle = c.dir > 0 ? 'rgba(240,228,205,.85)' : 'rgba(226,100,88,.85)';
+    cc.fillRect(c.x-1, c.y-1, 3, 2);
+  }
+  cc.strokeStyle = 'rgba(185,200,220,.13)'; cc.lineWidth = 1;
+  cc.beginPath();
+  for (const d of drops){
+    d.y += d.s; d.x += 1.4;
+    if (d.y > H){ d.y = -20; d.x = Math.random()*W; }
+    if (d.x > W) d.x -= W;
+    cc.moveTo(d.x, d.y); cc.lineTo(d.x - 2.2, d.y - d.l);
+  }
+  cc.stroke();
+}
+
+/* ---------- video: PM asset auto-detection ---------- */
+const vid = $('#bgVideo'), vwrap = $('#bgVideoWrap');
+function cityActive(){
+  const m = state.settings.bg;
+  return m === 'city' || (m === 'auto' && !state.videoOK);
+}
+function applyBg(){
+  const show = state.settings.bg === 'auto' || state.settings.bg === 'video';
+  vwrap.classList.toggle('on', show);
+  if (show) vid.play().catch(()=>{});
+}
+// Removed error listeners that were hiding the video
+
+
+/* ---------- master loop: canvas + parallax + eye tracking ---------- */
+const eyeTrack = document.getElementById('eyeTrack');
+function updateUI(){
+  pmx += (mx - pmx) * .055; pmy += (my - pmy) * .055;
+  ex += (mx*4 - ex) * .09;  ey += (my*2.4 - ey) * .09;
+  eyeTrack.setAttribute('transform', `translate(${ex.toFixed(2)} ${ey.toFixed(2)})`);
+  if (Math.abs(pmx - lastP) > .002){
+    lastP = pmx;
+    vwrap.style.transform = `translate(${(pmx*16).toFixed(1)}px, ${(pmy*9).toFixed(1)}px) scale(1.07)`;
+    $('#charWrap').style.transform = `translate(${(pmx*-9).toFixed(1)}px, ${(pmy*-5).toFixed(1)}px)`;
+  }
+}
+function frame(t){
+  requestAnimationFrame(frame);
+  if (document.hidden) return;
+  if (!state.settings.reduceMotion) updateUI();
+  if (!cityActive()){
+    if (needStatic){ cc.fillStyle = '#080C14'; cc.fillRect(0,0,W,H); needStatic = false; }
+    return;
+  }
+  if (state.settings.reduceMotion){
+    if (needStatic){ draw(performance.now()); needStatic = false; }
+    return;
+  }
+  needStatic = true;
+  draw(t);
+}
+
+/* ---------- character terminal: live typing loop ---------- */
+const svgNS = 'http://www.w3.org/2000/svg';
+const screenG = document.getElementById('screenText'), cur = document.getElementById('cursor');
+const SCRIPT = [
+  { c:'cmd', t:'> trace --suspect 04' },
+  { c:'out', t:'  3 hidden commits' },
+  { c:'cmd', t:'> git blame k4r3n' },
+  { c:'out', t:'  delete recv_buf();' },
+  { c:'cmd', t:'> patch 4821 --fix' },
+  { c:'ok',  t:'  VERIFIED [OK]' }
+];
+const CW = 5.72; /* Space Mono char width @ 9.5px */
+let lines = [];
+async function typeLoop(){
+  while (true){
+    for (const L of SCRIPT){
+      const t = document.createElementNS(svgNS, 'text');
+      t.setAttribute('x', 224); t.setAttribute('class', 't-' + L.c);
+      screenG.appendChild(t); lines.push(t);
+      if (lines.length > 5) lines.shift().remove();
+      lines.forEach((el, i) => el.setAttribute('y', 334 + i*13));
+      cur.setAttribute('y', 334 + (lines.length-1)*13 - 9);
+      for (const ch of L.t){
+        t.textContent += ch;
+        cur.setAttribute('x', 224 + t.textContent.length * CW);
+        await wait(34 + Math.random()*46);
+      }
+      await wait(620);
+    }
+    await wait(500);
+  }
+}
+
+/* ================================================================
+   GAME LOGIC
+   ================================================================ */
+let gameTimerIntv;
+let timeLeft = 20 * 60;
+let lastSavedSecs = 0;
+let saveIntv;
+let sabotageCount = 0;
+
+const BUGGY_PY = `def binary_search(arr, target):
+    left, right = 0, len(arr)
+    
+    while left <= right:
+        mid = (left + right) // 2
+        
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+            
+    return -1`;
+
+function highlightPy(text) {
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  html = html.replace(/(#.*)/g, '<span class="hl-com">$1</span>');
+  html = html.replace(/("[^"]*"|'[^']*')/g, '<span class="hl-str">$1</span>');
+  const kws = ['def', 'return', 'if', 'elif', 'else', 'while', 'for', 'in', 'and', 'or', 'not', 'True', 'False', 'None'];
+  const kwRegex = new RegExp(`\\b(${kws.join('|')})\\b(?![^<]*>)`, 'g');
+  html = html.replace(kwRegex, '<span class="hl-kw">$1</span>');
+  return html;
+}
+
+function updateEditor() {
+  const val = $('#edInput').value;
+  $('#edOutput').innerHTML = highlightPy(val) || ' ';
+  const lines = val.split('\n').length;
+  let linesHtml = '';
+  for(let i=1; i<=Math.max(1, lines); i++) linesHtml += `<span>${i}</span>`;
+  $('#edLines').innerHTML = linesHtml;
+  lastSavedSecs = 0;
+  $('#gbSaved').textContent = `LAST SAVED JUST NOW`;
+}
+
+$('#edInput').addEventListener('input', updateEditor);
+$('#edInput').addEventListener('scroll', () => {
+  $('#edOutput').scrollTop = $('#edInput').scrollTop;
+  $('#edOutput').scrollLeft = $('#edInput').scrollLeft;
+  $('#edLines').scrollTop = $('#edInput').scrollTop;
+});
+
+function initGameStage(role) {
+  document.body.classList.add('game-mode');
+  document.body.classList.toggle('mafia-active', role === 'MAFIA');
+  
+  const bdg = $('#tbRoleBadge');
+  if (role === 'MAFIA') {
+    bdg.className = 'role-badge maf';
+    bdg.textContent = 'MAFIA';
+    $('#gameLayout').className = 'game-layout layout-mafia';
+    buildMafiaPanels();
+  } else {
+    bdg.className = 'role-badge op';
+    bdg.textContent = 'DEBUGGER';
+    $('#gameLayout').className = 'game-layout layout-debugger';
+  }
+  
+  $('#edInput').value = BUGGY_PY;
+  updateEditor();
+  
+  timeLeft = 20 * 60;
+  clearInterval(gameTimerIntv);
+  gameTimerIntv = setInterval(() => {
+    timeLeft--;
+    const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+    const s = (timeLeft % 60).toString().padStart(2, '0');
+    const tb = $('#tbTimer');
+    tb.textContent = `${m}:${s}`;
+    tb.className = timeLeft < 60 ? 'critical' : (timeLeft < 300 ? 'danger' : '');
+    if(timeLeft <= 0) {
+      clearInterval(gameTimerIntv);
+      window.location.href = 'results.html';
+    }
+  }, 1000);
+  
+  clearInterval(saveIntv);
+  saveIntv = setInterval(() => {
+    lastSavedSecs++;
+    if(lastSavedSecs > 60) $('#gbSaved').textContent = `LAST SAVED ${Math.floor(lastSavedSecs/60)}M AGO`;
+    else $('#gbSaved').textContent = `LAST SAVED ${lastSavedSecs}S AGO`;
+  }, 1000);
+}
+
+$('#missionBrief').addEventListener('click', e => {
+  e.currentTarget.classList.toggle('collapsed');
+});
+
+const OTHER_PLAYERS = ['NULL_PTR', 'D3BUG_K1NG', 'SEGFAULT_SUE'];
+function buildMafiaPanels() {
+  const c = $('#mafiaPanels');
+  c.innerHTML = OTHER_PLAYERS.map((p, i) => `
+    <div class="ro-panel" id="ro-${i}">
+      <div class="ro-head">
+        <span class="ro-name"><i class="ro-dot"></i>${p}</span>
+        <button class="ro-btn" onclick="toggleSabotage(${i})">[ SABOTAGE ]</button>
+      </div>
+      <div class="ro-body">
+        <textarea style="width:100%;height:100%;background:transparent;color:inherit;border:none;resize:none;font-family:inherit;font-size:inherit;display:none;outline:none;" spellcheck="false"></textarea>
+        <div class="ro-html">${highlightPy(BUGGY_PY)}</div>
+      </div>
+      <button class="ro-commit" onclick="commitSabotage(${i})">COMMIT SABOTAGE</button>
+    </div>
+  `).join('');
+}
+
+window.toggleSabotage = (idx) => {
+  const p = $(`#ro-${idx}`);
+  const isSab = p.classList.contains('sabotage-mode');
+  $$('.ro-panel').forEach(x => {
+    x.classList.remove('sabotage-mode');
+    x.querySelector('textarea').style.display = 'none';
+    x.querySelector('.ro-html').style.display = 'block';
+  });
+  if (!isSab) {
+    p.classList.add('sabotage-mode');
+    const ta = p.querySelector('textarea');
+    const html = p.querySelector('.ro-html');
+    ta.value = html.textContent; 
+    ta.style.display = 'block';
+    html.style.display = 'none';
+    ta.focus();
+  }
+};
+
+window.commitSabotage = (idx) => {
+  const p = $(`#ro-${idx}`);
+  const ta = p.querySelector('textarea');
+  const html = p.querySelector('.ro-html');
+  html.innerHTML = highlightPy(ta.value);
+  p.classList.remove('sabotage-mode');
+  ta.style.display = 'none';
+  html.style.display = 'block';
+  sabotageCount++;
+  $('#gbSabotageLog').textContent = `⚑ ${sabotageCount} DEPLOYED`;
+  toast('SABOTAGE DEPLOYED', 'err');
+};
+
+$('#btnRunTests').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const old = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<i data-lucide="loader" class="spin"></i>RUNNING…`; icons();
+  await wait(1500);
+  btn.disabled = false; btn.innerHTML = old; icons();
+  
+  const r = $('#testResults');
+  const passedCount = Math.random() > 0.3 ? 4 : Math.floor(Math.random()*4);
+  const tests = ['test_empty_array', 'test_single_element', 'test_out_of_bounds', 'test_negative_values'];
+  let listHtml = '';
+  tests.forEach((t, i) => {
+    const p = i < passedCount;
+    listHtml += `<div class="tr-row ${p?'pass':'fail'}"><span><i>${p?'✓':'✗'}</i>${t}</span><span>${p?'PASSED':'FAILED'}</span></div>`;
+  });
+  $('#trList').innerHTML = listHtml;
+  
+  if (passedCount === 4) {
+    r.classList.remove('fail');
+    $('#trSummary').textContent = `✓ ALL TESTS PASSED`;
+  } else {
+    r.classList.add('fail');
+    $('#trSummary').textContent = `${passedCount} / 4 PASSING · FIX AND RERUN`;
+  }
+  r.classList.add('on');
+});
+
+$('#btnTrClose').addEventListener('click', () => $('#testResults').classList.remove('on'));
+$('#btnBlame').addEventListener('click', () => toast('ACCUSATION FILED — AWAITING VOTE', 'err'));
+
+
+/* ---------- boot ---------- */
+resize();
+applySettings();
+syncProfileUI();
+renderNotes();
+renderBoard();
+startTimers();
+renderBoxes();
+initLobbyStage();
+requestAnimationFrame(frame);
+typeLoop();
+setTimeout(() => { $('#xpFill').style.width = pct() + '%'; }, 600);
+setTimeout(() => toast('SYSTEM ONLINE — CODE MAFIA frontend v0.4.1'), 900);
+</script>
+</body>
+</html>

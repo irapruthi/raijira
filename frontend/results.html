@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CODE MAFIA - Results</title>
+
+  <!-- Web Fonts: Space Mono, Black Ops One, Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Space+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    /* DESIGN TOKENS */
+    :root {
+      --bg: #080C14;
+      --glass-bg: rgba(10, 15, 30, 0.65);
+      --glass-border: rgba(78, 205, 196, 0.15);
+      --amber: #C87941;
+      --teal: #4ECDC4;
+      --cream: #F0EBE0;
+      --red: #E05252;
+      --gold: #F4C430;
+      
+      --font-d: 'Black Ops One', display;
+      --font-m: 'Space Mono', monospace;
+      --font-s: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      background: var(--bg);
+      color: var(--cream);
+      font-family: var(--font-s);
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* BACKGROUND VIDEO & OVERLAY */
+    .bg-video {
+      position: fixed; inset: 0; z-index: 1;
+      overflow: hidden; pointer-events: none;
+    }
+    .bg-video video {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .bg-tint {
+      position: fixed; inset: 0; z-index: 2;
+      background: rgba(4, 8, 18, 0.80);
+    }
+    .bg-vig {
+      position: fixed; inset: 0; z-index: 3;
+      background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.85) 100%);
+      pointer-events: none;
+    }
+
+    /* GLASS UTILS */
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--glass-border);
+      border-radius: 8px;
+    }
+
+    /* BEATS CONTAINER */
+    .beat-container {
+      position: relative;
+      z-index: 10;
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ============================================================
+       BEAT 1: WINNER BANNER
+       ============================================================ */
+    #beat1 {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity 0.4s ease;
+      cursor: pointer;
+    }
+    #beat1.active { opacity: 1; z-index: 100; }
+    #beat1.fade-out { opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+    
+    .b1-sub { font-family: var(--font-m); font-size: 1.2rem; letter-spacing: 4px; margin-bottom: 1rem; color: var(--teal); opacity: 0.8; }
+    .b1-title {
+      font-family: var(--font-d);
+      font-size: clamp(48px, 8vw, 96px);
+      line-height: 1.1;
+      text-align: center;
+      color: var(--teal);
+      text-shadow: 0 0 40px rgba(78,205,196,0.6);
+      margin: 0;
+    }
+    #beat1.mafia-win .b1-sub { color: var(--red); }
+    #beat1.mafia-win .b1-title {
+      color: var(--red);
+      text-shadow: 0 0 40px rgba(224,82,82,0.6);
+    }
+
+    /* Particles for Beat 1 */
+    .particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .particle {
+      position: absolute; bottom: -20px;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: var(--teal);
+      animation: floatUp linear infinite;
+    }
+    #beat1.mafia-win .particle { background: var(--red); }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+    }
+
+    /* ============================================================
+       BEAT 2: MAFIA REVEAL
+       ============================================================ */
+    #beat2 {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+      cursor: pointer;
+    }
+    #beat2.active { opacity: 1; z-index: 100; pointer-events: auto; }
+    #beat2.fade-out { opacity: 0; pointer-events: none; }
+
+    .b2-pre { font-family: var(--font-m); font-size: 1rem; letter-spacing: 4px; color: rgba(240,235,224,0.6); margin-bottom: -20px; z-index: 2; }
+    .b2-name {
+      font-family: var(--font-d);
+      font-size: clamp(40px, 6vw, 80px);
+      color: var(--red);
+      text-shadow: 0 0 40px rgba(224,82,82,0.6);
+      margin-top: -20px; z-index: 2;
+      transform: scale(0.7);
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    #beat2.active .b2-name { transform: scale(1); }
+    .b2-status {
+      font-family: var(--font-m); font-size: 0.9rem; letter-spacing: 2px; margin-top: 10px; z-index: 2;
+    }
+    .b2-status.caught { color: var(--teal); }
+    .b2-status.escaped { color: var(--red); }
+
+    .spotlight {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      width: 600px; height: 600px;
+      background: radial-gradient(circle at center, rgba(224,82,82,0.15) 0%, transparent 60%);
+      z-index: 0; opacity: 0;
+      transition: opacity 1s ease;
+    }
+    #beat2.active .spotlight { opacity: 1; }
+    
+    #charWrapBeat2 { width: 300px; z-index: 1; }
+    /* Make the character lit in red */
+    #charWrapBeat2 svg #figure { filter: drop-shadow(0 0 20px rgba(224,82,82,0.5)); }
+
+    /* ============================================================
+       BEAT 3: FULL RESULTS LAYOUT
+       ============================================================ */
+    #beat3 {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      opacity: 0; pointer-events: none; transition: opacity 0.6s ease;
+      padding: 40px;
+    }
+    #beat3.active { opacity: 1; z-index: 100; pointer-events: auto; }
+    
+    .r-container {
+      width: 100%; max-width: 1200px;
+      display: flex; flex-direction: column; gap: 20px;
+      height: 100%;
+    }
+
+    /* R1: Header */
+    .r-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 24px;
+    }
+    .rh-left { display: flex; align-items: center; gap: 16px; font-family: var(--font-d); font-size: 20px; }
+    .rh-chip { font-family: var(--font-m); font-size: 12px; color: var(--amber); background: rgba(200,121,65,0.15); padding: 4px 8px; border-radius: 4px; letter-spacing: 1px; }
+    .rh-center { font-family: var(--font-d); font-size: 24px; letter-spacing: 2px; }
+    .rh-center.teal { color: var(--teal); text-shadow: 0 0 10px rgba(78,205,196,0.4); }
+    .rh-center.red { color: var(--red); text-shadow: 0 0 10px rgba(224,82,82,0.4); }
+    .rh-right { font-family: var(--font-m); font-size: 14px; opacity: 0.8; letter-spacing: 1px; }
+
+    /* Two Columns */
+    .r-body {
+      display: flex; gap: 20px; flex-grow: 1; min-height: 0;
+    }
+    .r-col-left { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 8px; }
+    .r-col-right { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+    /* R2: Player Scorecards */
+    .scorecard {
+      padding: 16px; position: relative;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .sc-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(240,235,224,0.1); padding-bottom: 10px; }
+    .sc-name { font-family: var(--font-m); font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
+    .sc-role { font-family: var(--font-m); font-size: 11px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; }
+    .sc-role.debugger { background: rgba(78,205,196,0.15); color: var(--teal); border: 1px solid rgba(78,205,196,0.3); }
+    .sc-role.mafia { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid rgba(224,82,82,0.3); }
+    
+    .scorecard.is-mafia { border-color: rgba(224,82,82,0.4); box-shadow: inset 0 0 20px rgba(224,82,82,0.05); }
+    .scorecard.is-you { border-color: var(--amber); }
+    .you-badge { position: absolute; top: -8px; right: -8px; background: var(--amber); color: #000; font-family: var(--font-m); font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+
+    .sc-stats { display: flex; flex-direction: column; gap: 6px; }
+    .sc-stat-row { display: flex; justify-content: space-between; font-size: 13px; }
+    .sc-stat-label { color: rgba(240,235,224,0.6); }
+    .sc-stat-val { font-family: var(--font-m); }
+    .val-teal { color: var(--teal); }
+    .val-red { color: var(--red); }
+
+    .sc-rewards { display: flex; gap: 16px; font-family: var(--font-m); font-size: 14px; font-weight: bold; padding-top: 6px; }
+    .sc-xp { color: var(--amber); }
+    .sc-dia { color: var(--gold); }
+
+    /* R3: Your Rewards Panel */
+    .rewards-panel { padding: 24px; flex-grow: 1; display: flex; flex-direction: column; gap: 24px; }
+    .rp-title { font-family: var(--font-m); font-size: 14px; letter-spacing: 2px; color: rgba(240,235,224,0.6); border-bottom: 1px solid rgba(240,235,224,0.1); padding-bottom: 8px; }
+    
+    .xp-breakdown { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+    .xp-row { display: flex; justify-content: space-between; opacity: 0; }
+    .xp-row.show { opacity: 1; transition: opacity 0.3s ease; }
+    .xp-label { color: rgba(240,235,224,0.8); }
+    .xp-val { font-family: var(--font-m); color: var(--amber); }
+    .xp-total { display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; border-top: 1px solid rgba(240,235,224,0.1); padding-top: 12px; margin-top: 4px; }
+    .xp-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+    .xp-bar-fill { height: 100%; background: var(--amber); width: 0%; transition: width 0.8s ease-out; }
+
+    .dia-row { display: flex; align-items: center; gap: 12px; font-family: var(--font-m); font-size: 28px; color: var(--gold); }
+    .dia-row i { animation: diaPulse 1s ease 1; }
+    @keyframes diaPulse { 0%,100%{transform:scale(1);} 50%{transform:scale(1.3); filter:brightness(1.5);} }
+
+    .tokens-wrap { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+    .token-card {
+      min-width: 140px; padding: 12px; border-radius: 6px;
+      display: flex; flex-direction: column; gap: 8px;
+      background: rgba(0,0,0,0.3); border: 1px solid;
+      opacity: 0; transform: translateX(20px);
+    }
+    .token-card.show { opacity: 1; transform: translateX(0); transition: all 0.4s ease; }
+    .tc-icon { font-size: 24px; }
+    .tc-name { font-family: var(--font-d); font-size: 14px; }
+    .tc-desc { font-size: 11px; color: rgba(240,235,224,0.7); line-height: 1.4; flex-grow: 1; }
+    .tc-rarity { font-family: var(--font-m); font-size: 10px; font-weight: bold; letter-spacing: 1px; }
+
+    .token-common { border-color: rgba(255,255,255,0.2); }
+    .token-common .tc-rarity { color: rgba(255,255,255,0.5); }
+    
+    .token-uncommon { border-color: var(--teal); }
+    .token-uncommon .tc-name, .token-uncommon .tc-rarity { color: var(--teal); }
+    
+    .token-rare { border-color: var(--amber); }
+    .token-rare .tc-name, .token-rare .tc-rarity { color: var(--amber); }
+    
+    .token-legendary { border-color: var(--gold); box-shadow: 0 0 15px rgba(244,196,48,0.2); }
+    .token-legendary .tc-name, .token-legendary .tc-rarity { color: var(--gold); }
+
+    /* R4: Match Stats */
+    .r-stats { display: flex; justify-content: space-around; padding: 20px; }
+    .stat-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .stat-lbl { font-size: 12px; letter-spacing: 2px; color: rgba(240,235,224,0.6); }
+    .stat-num { font-family: var(--font-m); font-size: 24px; }
+
+    /* R5: Buttons */
+    .r-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
+    .btn-row { display: flex; gap: 20px; }
+    .btn {
+      font-family: var(--font-d); font-size: 20px; padding: 12px 32px;
+      border: none; border-radius: 6px; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; transition: all 0.2s;
+    }
+    .btn-amber { background: var(--amber); color: #000; }
+    .btn-amber:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200,121,65,0.3); }
+    .btn-ghost { background: var(--glass-bg); color: var(--cream); border: 1px solid var(--teal); }
+    .btn-ghost:hover { background: rgba(78,205,196,0.1); }
+    
+    .next-match { font-family: var(--font-m); font-size: 12px; color: rgba(240,235,224,0.5); }
+    
+  </style>
+</head>
+<body>
+  
+  <div class="bg-video">
+    <video autoplay muted loop playsinline preload="auto">
+      <source src="assets/bg.mp4" type="video/mp4">
+    </video>
+  </div>
+  <div class="bg-tint"></div>
+  <div class="bg-vig"></div>
+
+  <div class="beat-container">
+    
+    <!-- BEAT 1 -->
+    <div id="beat1">
+      <div class="particles" id="b1Particles"></div>
+      <div class="b1-sub" id="b1Sub">MISSION COMPLETE</div>
+      <h1 class="b1-title" id="b1Title">DEBUGGERS<br>PREVAILED</h1>
+    </div>
+
+    <!-- BEAT 2 -->
+    <div id="beat2">
+      <div class="spotlight"></div>
+      <div class="b2-pre">THE MAFIA WAS</div>
+      <div id="charWrapBeat2">
+        <svg id="charSvg" viewBox="0 0 560 480" role="img" aria-hidden="true">
+          <defs>
+            <filter id="fSoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="7"/></filter>
+            <radialGradient id="gScreen" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#E05252" stop-opacity=".26"/>
+              <stop offset="100%" stop-color="#E05252" stop-opacity="0"/>
+            </radialGradient>
+            <clipPath id="scrClip"><rect x="222" y="322" width="116" height="70" rx="2"/></clipPath>
+          </defs>
+          <ellipse cx="280" cy="436" rx="150" ry="13" fill="#000" opacity=".5" filter="url(#fSoft)"/>
+          <g id="figure">
+            <path d="M172 432 C178 354 196 314 226 300 C244 291 266 287 280 287 C294 287 316 291 334 300 C364 314 382 354 388 432 Z" fill="#0B121F" stroke="rgba(234,227,214,.05)"/>
+            <path d="M256 294 C262 285 298 285 304 294 L298 322 L262 322 Z" fill="#05080D"/>
+            <ellipse cx="280" cy="250" rx="47" ry="46" fill="#060A10"/>
+            <ellipse cx="280" cy="280" rx="30" ry="15" fill="#E05252" opacity=".1"/>
+            <g id="hat">
+              <ellipse cx="280" cy="227" rx="52" ry="11" fill="#030509" opacity=".85"/>
+              <ellipse cx="280" cy="218" rx="86" ry="13" fill="#0D1522"/>
+              <path d="M194 222 A86 13 0 0 0 366 222" fill="none" stroke="rgba(229,154,99,.25)" stroke-width="1.5"/>
+              <path d="M234 216 C236 172 248 148 280 146 C312 148 324 172 326 216 C300 224 260 224 234 216 Z" fill="#0E1726"/>
+            </g>
+            <path d="M214 312 C198 332 200 366 220 388 C227 395 238 393 239 384 C224 368 220 344 232 320 Z" fill="#0A0F1B"/>
+            <path d="M346 312 C362 332 360 366 340 388 C333 395 322 393 321 384 C336 368 340 344 328 320 Z" fill="#0A0F1B"/>
+          </g>
+          <ellipse cx="280" cy="396" rx="128" ry="44" fill="url(#gScreen)"/>
+          <rect x="216" y="316" width="128" height="82" rx="5" fill="#04070C" stroke="#1B2637" stroke-width="1.2"/>
+        </svg>
+      </div>
+      <h2 class="b2-name">K4R3N</h2>
+      <div class="b2-status caught">[ SUCCESSFULLY IDENTIFIED ]</div>
+    </div>
+
+    <!-- BEAT 3 -->
+    <div id="beat3">
+      <div class="r-container">
+        
+        <!-- R1: Header -->
+        <div class="r-header glass">
+          <div class="rh-left">
+            <i data-lucide="terminal-square"></i> CODE MAFIA
+            <span class="rh-chip">SEASON 04</span>
+          </div>
+          <div class="rh-center teal" id="rcOutcome">DEBUGGERS WIN</div>
+          <div class="rh-right">ROOM W7D · 00:00</div>
+        </div>
+
+        <div class="r-body">
+          <!-- R2: Scorecards -->
+          <div class="r-col-left" id="scorecardsCont">
+            <!-- Injected by JS -->
+          </div>
+
+          <!-- R3: Rewards Panel -->
+          <div class="r-col-right">
+            <div class="rewards-panel glass">
+              
+              <div>
+                <div class="rp-title">XP EARNED THIS MATCH</div>
+                <div class="xp-breakdown" id="xpLines">
+                  <div class="xp-row"><span class="xp-label">Base participation</span><span class="xp-val">+ 100 XP</span></div>
+                  <div class="xp-row"><span class="xp-label">Tests passed (3/4)</span><span class="xp-val">+ 150 XP</span></div>
+                  <div class="xp-row"><span class="xp-label">Bug identified</span><span class="xp-val">+ 80 XP</span></div>
+                  <div class="xp-row"><span class="xp-label">Mafia caught (voted)</span><span class="xp-val">+ 120 XP</span></div>
+                  <div class="xp-row"><span class="xp-label">First to pass tests</span><span class="xp-val">+ 50 XP</span></div>
+                  <div class="xp-total xp-row"><span class="xp-label">TOTAL</span><span class="xp-val xp-counter" data-val="500">+ 0 XP</span></div>
+                </div>
+                <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBarFill"></div></div>
+              </div>
+
+              <div>
+                <div class="rp-title" style="border:none">DIAMONDS EARNED</div>
+                <div class="dia-row"><i data-lucide="gem"></i> <span class="dia-counter" data-val="12">+ 0 DIAMONDS</span></div>
+              </div>
+
+              <div class="glass" style="padding:16px; background:rgba(0,0,0,0.4); border-color:var(--amber);">
+                <div class="rp-title" style="border:none; margin-bottom:12px;">SPECIAL TOKENS</div>
+                <div class="tokens-wrap" id="tokensWrap">
+                  <!-- Injected by JS -->
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- R4: Match Stats -->
+        <div class="r-stats glass">
+          <div class="stat-box"><span class="stat-lbl">MATCH DURATION</span><span class="stat-num">18:42</span></div>
+          <div class="stat-box"><span class="stat-lbl">BUGS FIXED</span><span class="stat-num stat-counter" data-val="5">0</span></div>
+          <div class="stat-box"><span class="stat-lbl">SABOTAGES</span><span class="stat-num stat-counter" data-val="2">0</span></div>
+          <div class="stat-box"><span class="stat-lbl">ACCURACY</span><span class="stat-num stat-counter" data-val="75" data-suffix="%">0%</span></div>
+        </div>
+
+        <!-- R5: Buttons -->
+        <div class="r-actions">
+          <div class="btn-row">
+            <button class="btn btn-ghost" onclick="window.location.href='index.html'">
+              <i data-lucide="arrow-left"></i> BACK TO HOME
+            </button>
+            <button class="btn btn-amber" onclick="window.location.href='index.html?play=1'">
+              <i data-lucide="play"></i> PLAY AGAIN
+            </button>
+          </div>
+          <div class="next-match">NEXT SEASON MATCH IN 04:32:11</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="results.js"></script>
+</body>
+</html>
