@@ -7,49 +7,37 @@ Content-Type: application/json
   "password": "titty1234"
 }
 
-###
-
-### Step 2 - Execute Code (paste token from step 1)
-POST http://127.0.0.1:5000/api/execute
+### Step 2 - Start Vote
+POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/vote/start
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3MDYyLCJleHAiOjE3ODg0Njc5NjJ9.CnI7B1cUcM8xgcvxcwuFG3RWLE0v_mN9qAeVGdDe_20
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
 
 {
-  "code": "console.log('Hello from Code Mafia!')",
-  "gameId": "c7b1c826-e6c9-49b9-9c51-20620e0123cd"
+  "nominatedUserId": "d53a666b-7dc7-4e53-864f-72e319d7d93c",
+  "round": 1
 }
-
-###
-
-### Step 3 - Run Tests (paste token from step 1)
-POST http://127.0.0.1:5000/api/test
+### Step 3 - Cast Vote
+POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/vote/cast
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3MDYyLCJleHAiOjE3ODg0Njc5NjJ9.CnI7B1cUcM8xgcvxcwuFG3RWLE0v_mN9qAeVGdDe_20
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
+
 
 {
-  "gameId": "c7b1c826-e6c9-49b9-9c51-20620e0123cd",
-  "code": "console.log(input)",
-  "testCases": [
-    { "id": "1", "input": "hello", "expectedOutput": "hello" },
-    { "id": "2", "input": "world", "expectedOutput": "world" },
-    { "id": "3", "input": "code mafia", "expectedOutput": "code mafia" }
-  ]
+  "voteRoundId": "f861cec8-4fc1-4653-b3b3-d9ae5723e286",
+  "gamePlayerId": "bbafd40a-1f3c-4b8a-9fc4-18decf78870f",
+  "inFavor": true
 }
 
+### Step 4 - Vote Status
+GET http://127.0.0.1:5000/api/vote/f861cec8-4fc1-4653-b3b3-d9ae5723e286/status
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
 
 
-### Log Activity
-POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/activity
+### Step 5 - Resolve Vote
+POST http://127.0.0.1:5000/api/vote/f861cec8-4fc1-4653-b3b3-d9ae5723e286/resolve
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3NTU4LCJleHAiOjE3ODg0Njg0NTh9.WWvcL-GIAE-jwKoPJF7U2cygNdobuqkH5h-DXsdFraE
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
 
 {
-  "filename": "index.js",
-  "changeType": "MODIFY",
-  "linesChanged": 3,
-  "diff": "console.log('mafia was here')"
+  "roomCode": "0E8F1C"
 }
-
-### Get Activity Feed
-GET http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/activity
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3NTU4LCJleHAiOjE3ODg0Njg0NTh9.WWvcL-GIAE-jwKoPJF7U2cygNdobuqkH5h-DXsdFraE

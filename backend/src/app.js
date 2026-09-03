@@ -11,10 +11,11 @@ const redis = require("./config/redis");
 const authRouter = require("./modules/auth/routes/auth.routes.js");
 const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
 const editorRouter = require("./modules/editor/routes/editor.routes.js");
+const activityRouter = require("./modules/activity/routes/activity.routes.js");
 const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
 const createExecutionRouter = require("./modules/execution/routes/execution.routes.js");
+const createVotingRouter = require("./modules/voting/routes/voting.routes.js");
 const initSocket = require("./socket/socket.gateway");
-const activityRouter = require("./modules/activity/routes/activity.routes.js");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.static("./"));
 
+// routes that don't need io
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api", editorRouter);
@@ -41,9 +43,10 @@ app.use((err, req, res, next) => {
 const server = http.createServer(app);
 const io = initSocket(server);
 
-// routes that need io — mounted AFTER io is defined
+// routes that need io — AFTER io is defined
 app.use("/api", createRolesRouter(io));
 app.use("/api", createExecutionRouter(io));
+app.use("/api", createVotingRouter(io));
 
 module.exports = { app, server };
 
