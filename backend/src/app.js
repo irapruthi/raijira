@@ -15,6 +15,7 @@ const activityRouter = require("./modules/activity/routes/activity.routes.js");
 const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
 const createExecutionRouter = require("./modules/execution/routes/execution.routes.js");
 const createVotingRouter = require("./modules/voting/routes/voting.routes.js");
+const createGameRouter = require("./modules/game/routes/game.routes.js");
 const initSocket = require("./socket/socket.gateway");
 
 const app = express();
@@ -47,6 +48,7 @@ const io = initSocket(server);
 app.use("/api", createRolesRouter(io));
 app.use("/api", createExecutionRouter(io));
 app.use("/api", createVotingRouter(io));
+app.use("/api", createGameRouter(io));
 
 module.exports = { app, server };
 

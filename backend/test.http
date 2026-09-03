@@ -6,38 +6,26 @@ Content-Type: application/json
   "email": "ira@test.com",
   "password": "titty1234"
 }
+### Get Game State
+GET http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/state
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDcwNDAxLCJleHAiOjE3ODg0NzEzMDF9.wYQJlof78Fci9kiP3fKumAMygJWYR9OL4UuczDCbtzg
 
-### Step 2 - Start Vote
-POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/vote/start
+### Set Phase
+POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/phase
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDcwNDAxLCJleHAiOjE3ODg0NzEzMDF9.wYQJlof78Fci9kiP3fKumAMygJWYR9OL4UuczDCbtzg
 
 {
-  "nominatedUserId": "d53a666b-7dc7-4e53-864f-72e319d7d93c",
-  "round": 1
-}
-### Step 3 - Cast Vote
-POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/vote/cast
-Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
-
-
-{
-  "voteRoundId": "f861cec8-4fc1-4653-b3b3-d9ae5723e286",
-  "gamePlayerId": "bbafd40a-1f3c-4b8a-9fc4-18decf78870f",
-  "inFavor": true
+  "phase": "VOTING"
 }
 
-### Step 4 - Vote Status
-GET http://127.0.0.1:5000/api/vote/f861cec8-4fc1-4653-b3b3-d9ae5723e286/status
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
-
-
-### Step 5 - Resolve Vote
-POST http://127.0.0.1:5000/api/vote/f861cec8-4fc1-4653-b3b3-d9ae5723e286/resolve
+### End Game
+POST http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/end
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY5MzIyLCJleHAiOjE3ODg0NzAyMjJ9.rjHK5g-cVCR6eG0WqpuRQrRMS-JX6x6HUVjCRVxiPso
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDcwNDAxLCJleHAiOjE3ODg0NzEzMDF9.wYQJlof78Fci9kiP3fKumAMygJWYR9OL4UuczDCbtzg
 
 {
+  "winner": "DEVELOPERS",
+  "winReason": "ALL_MAFIA_ELIMINATED",
   "roomCode": "0E8F1C"
 }
