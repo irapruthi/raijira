@@ -10,8 +10,9 @@ const redis = require("./config/redis");
 
 const authRouter = require("./modules/auth/routes/auth.routes.js");
 const roomsRouter = require("./modules/rooms/routes/rooms.routes.js");
-const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
 const editorRouter = require("./modules/editor/routes/editor.routes.js");
+const createRolesRouter = require("./modules/roles/routes/roles.routes.js");
+const createExecutionRouter = require("./modules/execution/routes/execution.routes.js");
 const initSocket = require("./socket/socket.gateway");
 
 const app = express();
@@ -22,29 +23,25 @@ app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.static("./"));
 
-app.use("/api", editorRouter);
 app.use("/api/auth", authRouter);
 app.use("/api/rooms", roomsRouter);
+app.use("/api", editorRouter);
 
 app.get("/health", (req, res) => {
-    res.json({
-        status: "ok",
-        timestamp: new Date().toISOString(),
-    });
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 app.use((err, req, res, next) => {
     console.error(err.message);
-    return res.status(err.status || 500).json({
-        error: err.message,
-    });
+    return res.status(err.status || 500).json({ error: err.message });
 });
 
 const server = http.createServer(app);
-
 const io = initSocket(server);
 
+// routes that need io — mounted AFTER io is defined
 app.use("/api", createRolesRouter(io));
+app.use("/api", createExecutionRouter(io));
 
 module.exports = { app, server };
 

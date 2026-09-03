@@ -7,41 +7,31 @@ Content-Type: application/json
   "password": "titty1234"
 }
 
-### Step 2 - Create Room (copy fresh token from step 1)
-POST http://127.0.0.1:5000/api/rooms
+###
+
+### Step 2 - Execute Code (paste token from step 1)
+POST http://127.0.0.1:5000/api/execute
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3MDYyLCJleHAiOjE3ODg0Njc5NjJ9.CnI7B1cUcM8xgcvxcwuFG3RWLE0v_mN9qAeVGdDe_20
 
 {
-  "maxPlayers": 4,
-  "mafiaCount": 1,
-  "language": "javascript",
-  "timeLimitMinutes": 20,
-  "isPublic": true,
-  "mode": "SOCIAL_DEDUCTION",
-  "difficulty": "DEVELOPER"
+  "code": "console.log('Hello from Code Mafia!')",
+  "gameId": "c7b1c826-e6c9-49b9-9c51-20620e0123cd"
 }
 
-### Step 3 - Register second user and join room
-POST http://127.0.0.1:5000/api/auth/login
+###
+
+### Step 3 - Run Tests (paste token from step 1)
+POST http://127.0.0.1:5000/api/test
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY3MDYyLCJleHAiOjE3ODg0Njc5NjJ9.CnI7B1cUcM8xgcvxcwuFG3RWLE0v_mN9qAeVGdDe_20
 
 {
-  "email": "ira2@test.com",
-  "password": "titty1234"
+  "gameId": "c7b1c826-e6c9-49b9-9c51-20620e0123cd",
+  "code": "console.log(input)",
+  "testCases": [
+    { "id": "1", "input": "hello", "expectedOutput": "hello" },
+    { "id": "2", "input": "world", "expectedOutput": "world" },
+    { "id": "3", "input": "code mafia", "expectedOutput": "code mafia" }
+  ]
 }
-
-### Step 4 - Join Room (use user 2 token + roomId from step 2)
-POST http://127.0.0.1:5000/api/rooms/0E8F1C/join
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQ1M2E2NjZiLTdkYzctNGU1My04NjRmLTcyZTMxOWQ3ZDkzYyIsInVzZXJuYW1lIjoiaXJhMiIsImlhdCI6MTc4ODQ2NDYyNSwiZXhwIjoxNzg4NDY1NTI1fQ.RE5dNaBHkV7IMYaoFLxTjjro7jdpvQScIhkbxU6PthY
-
-### Step 5 - Start Game (use user 1 token + room UUID from step 2)
-POST http://127.0.0.1:5000/api/rooms/f8cf6e7b-044a-495b-9298-d3cdc37e37bc/start
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
-
-### Get Room
-GET http://127.0.0.1:5000/api/rooms/0E8F1C
-
-### Get My Role (User 1)
-GET http://127.0.0.1:5000/api/games/c7b1c826-e6c9-49b9-9c51-20620e0123cd/my-role
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImNhODA5OTNmLTU3MWUtNDcyYS1iMjZiLTBjNGY3OTQxZmY3YiIsInVzZXJuYW1lIjoiaXJhIiwiaWF0IjoxNzg4NDY0MDY1LCJleHAiOjE3ODg0NjQ5NjV9.9muZK8ccaeGyf9AuHqu2ujfwuzpgoO1gVBzu4QoN7p4
