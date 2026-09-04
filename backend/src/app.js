@@ -3,6 +3,7 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const http = require("http");
+const path = require("path");
 
 const config = require("./config/env");
 const prisma = require("./config/prisma");
@@ -25,6 +26,7 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 app.use(express.static("../frontend"));
+app.use("/socket.io", express.static(path.join(__dirname, "../node_modules/socket.io/client-dist")));
 
 // routes that don't need io
 app.use("/api/auth", authRouter);
@@ -36,10 +38,7 @@ app.get("/health", (req, res) => {
     res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-app.use((err, req, res, next) => {
-    console.error(err.message);
-    return res.status(err.status || 500).json({ error: err.message });
-});
+app.get("/results", (req, res) => res.redirect("/results.html"));
 
 const server = http.createServer(app);
 const io = initSocket(server);
@@ -49,6 +48,12 @@ app.use("/api", createRolesRouter(io));
 app.use("/api", createExecutionRouter(io));
 app.use("/api", createVotingRouter(io));
 app.use("/api", createGameRouter(io));
+
+// error handler must be last — after all routes
+app.use((err, req, res, next) => {
+    console.error(err.message);
+    return res.status(err.status || 500).json({ error: err.message });
+});
 
 module.exports = { app, server };
 

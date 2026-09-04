@@ -68,10 +68,37 @@ function me(req, res, next) {
     });
 }
 
+async function updateMe(req, res, next) {
+    try {
+        const prisma = require("../../../config/prisma.js");
+        const { username } = req.body;
+        if (!username || typeof username !== 'string') {
+            return res.status(400).json({ error: "username required" });
+        }
+        const trimmed = username.trim().slice(0, 32);
+        if (!trimmed) return res.status(400).json({ error: "username required" });
+
+        const existing = await prisma.user.findFirst({
+            where: { username: trimmed, NOT: { id: req.user.id } },
+        });
+        if (existing) return res.status(409).json({ error: "Username taken" });
+
+        const updated = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { username: trimmed },
+            select: { id: true, username: true },
+        });
+        return res.status(200).json({ user: updated });
+    } catch (err) {
+        next(err);
+    }
+}
+
 module.exports = {
     register,
     login,
     guest,
     refresh,
     me,
+    updateMe,
 };

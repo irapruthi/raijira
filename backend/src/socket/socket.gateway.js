@@ -18,7 +18,8 @@ function initSocket(server) {
 
     io.on("connection", (socket) => {
         console.log("User connected: " + socket.user.username);
-        handleRoomEvents(socket, io);
+        // join a user-specific room so role_assigned can be targeted by userId
+        socket.join(socket.user.id);
         handleRoomEvents(socket, io);
         handleCodeEvents(socket, io);
         handleChatEvents(socket, io);

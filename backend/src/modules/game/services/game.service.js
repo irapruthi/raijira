@@ -88,6 +88,7 @@ async function getGameState(gameId) {
         mode: game.room.mode,
         difficulty: game.room.difficulty,
         players: game.players.map((player) => ({
+            gamePlayerId: player.id,
             userId: player.user.id,
             username: player.user.username,
             isEliminated: player.isEliminated,
@@ -96,6 +97,7 @@ async function getGameState(gameId) {
         })),
         winner: null,
         winReason: null,
+        startedAt: game.startedAt,
     };
 
     await redis.set(key, JSON.stringify(state), "EX", 3600);

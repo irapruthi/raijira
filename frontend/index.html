@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CODE MAFIA — FSD 04</title>
+  <title>CODE MAFIA - FSD 04</title>
 
   <!-- Typography per brief: Black Ops One (headings/buttons) + Space Mono (code/data) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,15 +14,14 @@
 
   <script src="config.js"></script>
   <script src="api.js"></script>
-  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
+  <script src="/socket.io/socket.io.js"></script>
 
   <!-- Icon library -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.462.0/umd/lucide.min.js"></script>
 
   <style>
     /* ============================================================
-   DESIGN TOKENS — single source of truth.
+   DESIGN TOKENS - single source of truth.
    If the PM confirms the other 3 hex codes, swap them here only.
    ============================================================ */
     :root {
@@ -150,7 +149,7 @@
     }
 
     /* ============================================================
-   AMORPHISM SPEC — dark glass for every floating panel
+   AMORPHISM SPEC - dark glass for every floating panel
    ============================================================ */
     .glass {
       background: var(--glass);
@@ -305,7 +304,7 @@
     }
 
     /* ============================================================
-   LEFT SIDEBAR — vertical glass strip
+   LEFT SIDEBAR - vertical glass strip
    ============================================================ */
     .sidebar {
       position: fixed;
@@ -397,7 +396,7 @@
     }
 
     /* ============================================================
-   CENTER STAGE — character + title
+   CENTER STAGE - character + title
    ============================================================ */
     .stage {
       position: fixed;
@@ -636,7 +635,7 @@
     }
 
     /* ============================================================
-   BOTTOM BAR — LVL badge + PLAY + mode
+   BOTTOM BAR - LVL badge + PLAY + mode
    ============================================================ */
     .bottombar {
       position: fixed;
@@ -929,7 +928,7 @@
     }
 
     /* ============================================================
-   MODAL SYSTEM — overlay is exactly rgba(0,0,0,0.5) per spec
+   MODAL SYSTEM - overlay is exactly rgba(0,0,0,0.5) per spec
    ============================================================ */
     .overlay {
       position: fixed;
@@ -1029,6 +1028,50 @@
       color: var(--text);
       background: rgba(234, 227, 214, .07)
     }
+
+    /* blame / vote */
+    .blame-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px }
+    .blame-player-btn {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--line); text-align: left;
+      font-family: var(--font-m); font-size: 13px; letter-spacing: .04em;
+      color: var(--text); background: rgba(234,227,214,.04);
+      transition: all .15s ease; cursor: pointer;
+    }
+    .blame-player-btn:hover { background: rgba(200,121,65,.12); border-color: var(--accent) }
+    .blame-player-btn .bp-icon { font-size: 20px }
+    .vote-nominee-avatar {
+      display: block; width: 120px; height: 120px; object-fit: contain;
+      margin: 0 auto 8px; filter: drop-shadow(0 0 16px rgba(255,40,40,.3))
+    }
+    .vote-nominee {
+      text-align: center; font-family: var(--font-d); font-size: 22px;
+      letter-spacing: .08em; margin: 8px 0 20px; color: var(--accent)
+    }
+    .vote-btns { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px }
+    .btn-vote {
+      flex: 1; padding: 14px; border-radius: 10px;
+      font-family: var(--font-d); font-size: 14px; letter-spacing: .08em;
+      border: 1px solid var(--line); transition: all .15s ease; cursor: pointer;
+    }
+    .btn-vote.guilty { color: #e05c5c; border-color: rgba(224,92,92,.4) }
+    .btn-vote.guilty:hover { background: rgba(224,92,92,.15); border-color: #e05c5c }
+    .btn-vote.innocent { color: var(--teal); border-color: rgba(0,190,164,.3) }
+    .btn-vote.innocent:hover { background: rgba(0,190,164,.1); border-color: var(--teal) }
+    .btn-vote:disabled { opacity: .4; cursor: default }
+    .vote-cast-msg { text-align: center; font-size: 10px; letter-spacing: .2em; color: var(--muted) }
+    .vote-tally { display: flex; flex-direction: column; gap: 6px; margin-top: 12px }
+    .vote-tally-row {
+      display: flex; align-items: center; gap: 10px;
+      font-family: var(--font-m); font-size: 12px; color: var(--muted)
+    }
+    .vote-tally-row .vt-badge {
+      font-size: 9px; letter-spacing: .2em; font-weight: 700; padding: 2px 6px;
+      border-radius: 4px; background: rgba(234,227,214,.07)
+    }
+    .vote-tally-row .vt-badge.g { color: #e05c5c }
+    .vote-tally-row .vt-badge.i { color: var(--teal) }
 
     /* tabs */
     .mo-tabs {
@@ -1223,7 +1266,7 @@
       }
     }
 
-    /* code input — 6 boxes + hidden capture input */
+    /* code input - 6 boxes + hidden capture input */
     .code-input {
       display: flex;
       gap: 8px;
@@ -1893,7 +1936,7 @@
       top: 96px;
       bottom: 18px;
       z-index: 10;
-      gap: 14px;
+      gap: 10px;
       overflow: hidden;
       opacity: 0;
       pointer-events: none;
@@ -1906,40 +1949,51 @@
       pointer-events: auto;
     }
 
+    /* ---- room code card ---- */
     .ls-room {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 14px;
-      padding: 12px 24px;
-      border-radius: 12px;
-      margin-top: -30px;
+      gap: 6px;
+      padding: 14px 32px 16px;
+      border-radius: 14px;
     }
 
     .ls-room span {
-      font-size: 11px;
-      letter-spacing: .2em;
+      font-size: 9px;
+      letter-spacing: .3em;
       color: var(--teal);
       font-family: var(--font-m);
+      text-transform: uppercase;
+    }
+
+    .ls-room-code-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
     }
 
     .ls-room b {
-      font-family: var(--font-m);
-      font-size: 44px;
-      letter-spacing: .16em;
+      font-family: var(--font-d);
+      font-size: 32px;
+      letter-spacing: .22em;
       color: var(--text);
     }
 
     .ls-room button {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
       border: 1px solid var(--line);
       display: grid;
       place-items: center;
       color: var(--muted);
       transition: all .18s ease;
       background: rgba(234, 227, 214, .04);
+      flex-shrink: 0;
     }
+
+    .ls-room button svg { width: 14px; height: 14px; }
 
     .ls-room button:hover {
       color: var(--teal);
@@ -1947,14 +2001,14 @@
       background: rgba(78, 205, 196, .08);
     }
 
+    /* ---- operative count ---- */
     .ls-count {
-      font-size: 13px;
-      letter-spacing: .12em;
+      font-size: 10.5px;
+      letter-spacing: .18em;
       color: var(--muted);
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
+      gap: 8px;
       font-family: var(--font-m);
     }
 
@@ -1962,25 +2016,18 @@
       font-style: normal;
       color: var(--teal);
       animation: slotPulse 2s ease-in-out infinite;
-      font-size: 16px;
+      font-size: 8px;
     }
 
+    /* ---- character ---- */
     .typing-idle {
       animation: typing-idle 3s ease-in-out infinite;
       transform-origin: center bottom;
-      margin: -20px 0;
     }
 
     @keyframes typing-idle {
-
-      0%,
-      100% {
-        transform: translateY(0px) scale(0.95);
-      }
-
-      50% {
-        transform: translateY(-4px) scale(0.95);
-      }
+      0%, 100% { transform: translateY(0) scale(.9); }
+      50%       { transform: translateY(-5px) scale(.9); }
     }
 
     #charWrapLobby svg {
@@ -1991,39 +2038,34 @@
       filter: drop-shadow(0 0 15px rgba(255, 40, 40, .8)) drop-shadow(0 0 40px rgba(255, 40, 40, .4));
     }
 
+    /* ---- tip card ---- */
     .tip-card {
-      width: 720px;
+      width: min(560px, calc(100vw - 100px));
       text-align: center;
-      padding: 0;
-      border-radius: 14px;
+      padding: 14px 24px;
+      border-radius: 12px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 6px;
       transition: opacity .4s ease;
-      margin-top: 10px;
-      min-height: 110px;
-      justify-content: center;
     }
 
     .tip-badge {
-      font-size: 10.5px;
-      letter-spacing: .2em;
-      font-weight: bold;
+      font-family: var(--font-m);
+      font-size: 9px;
+      letter-spacing: .28em;
+      font-weight: 700;
     }
 
-    .tip-badge.dev {
-      color: var(--teal);
-    }
-
-    .tip-badge.field {
-      color: var(--amber);
-    }
+    .tip-badge.dev   { color: var(--teal); }
+    .tip-badge.field { color: var(--amber); }
 
     .tip-text {
-      font-family: 'Inter', sans-serif;
-      font-size: 13.5px;
-      line-height: 1.5;
-      color: var(--text);
+      font-family: var(--font-m);
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--muted);
+      letter-spacing: .03em;
     }
 
     .btn-ready {
@@ -2129,6 +2171,26 @@
       letter-spacing: .15em;
       font-family: var(--font-d);
       margin: 0;
+    }
+
+    .role-avatar {
+      width: 240px;
+      height: 240px;
+      object-fit: contain;
+      margin-bottom: 24px;
+      filter: drop-shadow(0 0 40px rgba(200,121,65,.35));
+      animation: avatarPop .6s cubic-bezier(.2,.9,.3,1) both;
+    }
+    @keyframes avatarPop {
+      from { opacity: 0; transform: scale(.7) translateY(20px) }
+      to   { opacity: 1; transform: none }
+    }
+    .role-reveal-overlay.role-mafia .role-avatar {
+      filter: drop-shadow(0 0 40px rgba(255,40,40,.45));
+    }
+    /* blame list avatar thumbnails */
+    .bp-avatar {
+      width: 44px; height: 44px; object-fit: contain; flex-shrink: 0;
     }
 
     .role-reveal-overlay.role-operator {
@@ -2798,7 +2860,7 @@
     }
 
     /* ============================================================
-   RESPONSIVE — desktop-first, graceful downgrades
+   RESPONSIVE - desktop-first, graceful downgrades
    ============================================================ */
     @media (max-height:800px) {
       .char-wrap svg {
@@ -2910,11 +2972,7 @@
   <header class="topbar glass">
     <div class="tb-left">
       <span class="logo-mark">
-        <svg viewBox="0 0 38 26" width="30" height="21" aria-hidden="true">
-          <ellipse cx="19" cy="20" rx="16.5" ry="4.5" fill="#C87941" />
-          <path d="M10.5 20 L12 7.5 C14 4.5 24 4.5 26 7.5 L27.5 20 Z" fill="#C87941" />
-          <rect x="11.6" y="14.2" width="14.8" height="4.2" fill="#080C14" opacity=".9" />
-        </svg>
+        <img src="assets/logo.png" alt="Logo" style="height: 30px; width: auto; object-fit: contain; mix-blend-mode: screen; filter: drop-shadow(0 0 5px rgba(200, 121, 65, 0.5));" />
       </span>
       <span class="logo-text">CODE<em>MAFIA</em></span>
     </div>
@@ -3049,7 +3107,7 @@
     </div>
 
     <h1 class="headline">DEBUG OR <em>SABOTAGE</em></h1>
-    <p class="subline"><i class="livedot"></i>SEASON 04 — <b id="online">2,847</b> OPERATIVES ONLINE</p>
+    <p class="subline"><i class="livedot"></i>SEASON 04 - <b id="online">2,847</b> OPERATIVES ONLINE</p>
   </main>
 
   <!-- ============ BOTTOM BAR ============ -->
@@ -3081,8 +3139,11 @@
   <!-- ============ LOBBY STAGE ============ -->
   <main class="lobby-stage" id="stageLobby">
     <div class="ls-room glass">
-      <span>> ROOM CODE</span><b id="lsRoomCode">XK-4821</b>
-      <button id="btnCopyRoom" title="Copy Room Code"><i data-lucide="copy"></i></button>
+      <span>ROOM CODE</span>
+      <div class="ls-room-code-row">
+        <b id="lsRoomCode">XK4-821</b>
+        <button id="btnCopyRoom" title="Copy Room Code"><i data-lucide="copy"></i></button>
+      </div>
     </div>
     <div class="ls-count">
       <i>●</i> <span id="lsCountText">2 / 4 OPERATIVES CONNECTED</span>
@@ -3105,6 +3166,7 @@
   </div>
 
   <div class="role-reveal-overlay" id="roleReveal">
+    <img id="roleAvatar" class="role-avatar" src="" alt="" />
     <h2>YOUR ROLE</h2>
     <h1 id="roleText">OPERATOR</h1>
   </div>
@@ -3120,7 +3182,7 @@
             <h3>MISSION BRIEF</h3>
             <span class="mb-tag">[ PYTHON ]</span>
           </div>
-          <p class="mb-body">Fix the binary search function — it returns incorrect indices for edge cases and infinite
+          <p class="mb-body">Fix the binary search function - it returns incorrect indices for edge cases and infinite
             loops on missing targets.</p>
         </div>
         <div class="editor-wrap">
@@ -3218,7 +3280,7 @@
 
       <div id="lobby" hidden>
         <div class="lobby-code">
-          <span>ROOM</span><b id="lobbyCode">———</b>
+          <span>ROOM</span><b id="lobbyCode">---</b>
           <button class="mini-btn" id="btnCopy" title="Copy code"><i data-lucide="copy"></i></button>
         </div>
         <p class="lobby-hint"><i data-lucide="radio"></i><span id="lobbyStatus">WAITING FOR OPERATIVES</span></p>
@@ -3239,7 +3301,7 @@
         <button class="mo-close" data-close><i data-lucide="x"></i></button>
       </header>
       <div class="board-table" id="boardTable"></div>
-      <p class="board-note">TOP 10 OF <b>2,847</b> — LADDER RESETS AT SEASON END</p>
+      <p class="board-note">TOP 10 OF <b>2,847</b> - LADDER RESETS AT SEASON END</p>
     </section>
 
     <!-- PROFILE -->
@@ -3260,7 +3322,7 @@
           <span class="pr-title">"GHOST OF THE STACK"</span>
         </div>
       </div>
-      <div class="lvl-line"><span>LVL 07 — OPERATIVE</span><span>12,480 / 15,000 XP</span></div>
+      <div class="lvl-line"><span>LVL 07 - OPERATIVE</span><span>12,480 / 15,000 XP</span></div>
       <div class="xpbar big"><i id="prXpFill"></i></div>
       <div class="stats">
         <div class="stat"><b>142</b><span>MATCHES</span></div>
@@ -3268,6 +3330,33 @@
         <div class="stat"><b>37</b><span>MAFIA CATCHES</span></div>
         <div class="stat"><b>61%</b><span>WIN RATE</span></div>
       </div>
+    </section>
+
+    <!-- BLAME - accuse a player -->
+    <section class="modal glass" id="m-blame" hidden aria-label="Accuse a player">
+      <header class="mo-head">
+        <h2 class="mo-title">FILE ACCUSATION</h2>
+        <span class="mo-sub">SELECT SUSPECT - THE ROOM WILL VOTE</span>
+        <button class="mo-close" data-close><i data-lucide="x"></i></button>
+      </header>
+      <div id="blamePlayerList" class="blame-list"></div>
+    </section>
+
+    <!-- VOTE - cast guilty / innocent -->
+    <section class="modal glass" id="m-vote" hidden aria-label="Voting in progress">
+      <header class="mo-head">
+        <h2 class="mo-title">VOTE</h2>
+        <span id="voteSubtitle" class="mo-sub">IS THIS OPERATIVE MAFIA?</span>
+        <button class="mo-close" data-close><i data-lucide="x"></i></button>
+      </header>
+      <img id="voteNomineeAvatar" class="vote-nominee-avatar" src="assets/avatar_detective.png" alt="suspect">
+      <p id="voteNomineeLabel" class="vote-nominee"></p>
+      <div id="voteButtons" class="vote-btns">
+        <button class="btn-vote guilty" id="btnVoteGuilty">⚑ GUILTY</button>
+        <button class="btn-vote innocent" id="btnVoteInnocent">✓ INNOCENT</button>
+      </div>
+      <p id="voteCastConfirm" class="vote-cast-msg" hidden>VOTE RECORDED - AWAITING OTHERS</p>
+      <div id="voteTally" class="vote-tally"></div>
     </section>
 
     <!-- SETTINGS -->
@@ -3310,7 +3399,7 @@
 
   <script>
     /* ================================================================
-       CODE MAFIA — home screen runtime
+       CODE MAFIA - home screen runtime
        Backend seams (swap these for real API calls later):
          enterLobby()  -> POST /rooms            (host) / join
          startMatch()  -> POST /rooms/:id/start
@@ -3330,18 +3419,36 @@
     let currentUser = JSON.parse(localStorage.getItem("cm_user") || "null");
 
     async function ensureAuth() {
-      if (authToken && currentUser) return;
+      // try refresh token first if we have one
+      const refreshToken = localStorage.getItem("cm_refresh");
+      if (refreshToken) {
+        try {
+          const res = await fetch(`${CONFIG.API_URL}/auth/refresh`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refreshToken }),
+          }).then(r => r.json());
+          if (res.accessToken) {
+            authToken = res.accessToken;
+            localStorage.setItem("cm_token", authToken);
+            // refresh endpoint rotates the refresh token too
+            if (res.refreshToken) localStorage.setItem("cm_refresh", res.refreshToken);
+            return;
+          }
+        } catch (_) {}
+      }
+      // fresh guest login
       try {
         const res = await API.guest();
         authToken = res.accessToken;
         currentUser = res.user;
         localStorage.setItem("cm_token", authToken);
-        localStorage.setItem("cm_refresh", res.refreshToken);  // ADD THIS
+        localStorage.setItem("cm_refresh", res.refreshToken);
         localStorage.setItem("cm_user", JSON.stringify(currentUser));
         console.log("Logged in as guest:", currentUser.username);
       } catch (err) {
         console.error("Auth failed:", err);
-        toast("BACKEND OFFLINE — running in demo mode", "err");
+        toast("BACKEND OFFLINE - running in demo mode", "err");
       }
     }
 
@@ -3367,10 +3474,14 @@
         if (state.lobby) {
           state.lobby.connected = (state.lobby.connected || 1) + 1;
           $('#lsCountText').textContent = `${state.lobby.connected} / ${state.lobby.total} OPERATIVES CONNECTED`;
-          if (state.lobby.host && state.lobby.connected >= state.lobby.total) {
+          if (state.lobby.host) {
             const btn = $('#btnReady');
-            btn.classList.remove('ready');
-            btn.innerHTML = '<i data-lucide="play"></i>START MISSION'; icons();
+            if (state.lobby.connected >= 2) {
+              btn.classList.remove('ready');
+              btn.innerHTML = `<i data-lucide="play"></i>START MISSION (${state.lobby.connected}/${state.lobby.total})`; icons();
+            } else {
+              btn.innerHTML = `<i data-lucide="loader"></i>WAITING (${state.lobby.connected}/${state.lobby.total})…`; icons();
+            }
           }
         }
       });
@@ -3387,12 +3498,49 @@
       socket.on("game_started", (data) => {
         console.log("Game started:", data);
         state.gameId = data.gameId;
+        // join the game-specific socket room so vote events reach all players
+        socket.emit("join_room", { roomCode: data.gameId });
+        // host already triggers flashOperatives() after its own countdown
+        // participants need to kick off the reveal here
+        if (!state.lobby || !state.lobby.host) {
+          flashOperatives();
+        }
       });
 
       socket.on("game_over", (data) => {
         console.log("Game over:", data);
         localStorage.setItem("cm_result", JSON.stringify(data));
         window.location.href = "results.html";
+      });
+
+      socket.on("vote_started", (data) => {
+        openVotePanel(data);
+      });
+
+      socket.on("vote_received", (data) => {
+        appendVoteTally(data);
+      });
+
+      socket.on("vote_result", (data) => {
+        const guilty = data.result === 'ELIMINATED';
+        const msg = guilty
+          ? `VOTE PASSED — SUSPECT REVEALED (${data.inFavor} vs ${data.against})`
+          : `VOTE FAILED — SUSPECT SPARED (${data.inFavor} vs ${data.against})`;
+        toast(msg, guilty ? 'err' : 'ok', 5000);
+        closeModal();
+        activeVoteRoundId = null;
+      });
+
+      socket.on("code_sync", (data) => {
+        // developers receive sabotaged code updates
+        if (!document.body.classList.contains('mafia-active')) {
+          const editor = $('#edInput');
+          if (editor && data.update) {
+            editor.value = data.update;
+            updateEditor();
+            toast(`⚑ CODE MODIFIED - SABOTAGE DETECTED`, 'err');
+          }
+        }
       });
     }
     /* ---------- state ---------- */
@@ -3474,7 +3622,7 @@
       if (v === 'play') openPlay(); else openModal('m-' + v);
     }));
     $('#btnLogout').addEventListener('click', () =>
-      toast(`SESSION CLEARED — see you in the stack, ${state.profile.name}`));
+      toast(`SESSION CLEARED - see you in the stack, ${state.profile.name}`));
 
     /* ---------- keyboard ---------- */
     document.addEventListener('keydown', e => {
@@ -3512,21 +3660,21 @@
     }
 
     $('#chipChips').addEventListener('click', () =>
-      toast('8,320 CHIPS — earn more by shipping clean patches'));
+      toast('8,320 CHIPS - earn more by shipping clean patches'));
     $('#chipPing').addEventListener('click', () =>
       toast(`ROUTE EDGE-ASIA · ${$('#pingv').textContent} · PACKET LOSS 0.0%`));
     $('#btnAvatar').addEventListener('click', () => { setActive('profile'); openModal('m-profile'); });
 
     /* ---------- notifications ---------- */
     let notes = [
-      { icon: 'zap', text: 'SEASON 04 IS LIVE — ranked ladder reset, new Mafia pool.', time: '2H AGO' },
+      { icon: 'zap', text: 'SEASON 04 IS LIVE - ranked ladder reset, new Mafia pool.', time: '2H AGO' },
       { icon: 'bug', text: 'Mafia activity detected in repo #4821. Three suspects flagged.', time: '6H AGO' },
-      { icon: 'crown', text: 'You reached LVL 7 — title "GHOST OF THE STACK" unlocked.', time: '1D AGO' }
+      { icon: 'crown', text: 'You reached LVL 7 - title "GHOST OF THE STACK" unlocked.', time: '1D AGO' }
     ];
     function renderNotes() {
       const list = $('#noteList');
       if (!notes.length) {
-        list.innerHTML = `<div class="nd-empty">ALL CLEAR — NOTHING TO REPORT, OPERATIVE.</div>`;
+        list.innerHTML = `<div class="nd-empty">ALL CLEAR - NOTHING TO REPORT, OPERATIVE.</div>`;
       } else {
         list.innerHTML = notes.map((n, i) => `
       <div class="nd-item">
@@ -3626,7 +3774,7 @@
     }
     function updateLobbyStatus() {
       const total = state.lobby.total, inL = $$('#lobbySlots .slot').filter(s => !s.classList.contains('empty')).length;
-      $('#lobbyStatus').textContent = `WAITING FOR OPERATIVES — ${inL}/${total} IN LOBBY`;
+      $('#lobbyStatus').textContent = `WAITING FOR OPERATIVES - ${inL}/${total} IN LOBBY`;
     }
     function initLobbyStage() {
       $('#charWrapLobby').innerHTML = $('#charWrap').innerHTML;
@@ -3662,9 +3810,9 @@
     }
 
     const TIPS = [
-      { text: "Check variable names carefully — a single character swap is enough to break logic", type: "DEV TIP", class: "dev" },
+      { text: "Check variable names carefully - a single character swap is enough to break logic", type: "DEV TIP", class: "dev" },
       { text: "Run your test case mentally before submitting", type: "DEV TIP", class: "dev" },
-      { text: "If your code was passing and suddenly isn't — someone may have visited", type: "DEV TIP", class: "dev" },
+      { text: "If your code was passing and suddenly isn't - someone may have visited", type: "DEV TIP", class: "dev" },
       { text: "Read the problem statement twice. The bug is often in your assumption, not your code", type: "DEV TIP", class: "dev" },
       { text: "Subtle bugs are invisible bugs. A wrong operator is harder to spot than missing code", type: "FIELD NOTE", class: "field" },
       { text: "The best sabotage looks exactly like a typo", type: "FIELD NOTE", class: "field" },
@@ -3697,13 +3845,24 @@
       const rt = $('#roleText');
       const charLobby = $('#charWrapLobby');
 
+      const ROLE_AVATAR = {
+        'MAFIA':     'assets/avatar_mafia.png',
+        'SABOTEUR':  'assets/avatar_saboteur.png',
+        'OPERATOR':  'assets/avatar_developer.png',
+        'DEVELOPER': 'assets/avatar_developer.png',
+        'LEAD_DEV':  'assets/avatar_lead_dev.png',
+      };
+      const role = state.myRole || 'OPERATOR';
+      $('#roleAvatar').src = ROLE_AVATAR[role] || 'assets/avatar_developer.png';
+      $('#roleAvatar').alt = role;
+
       if (isMafia) {
         rr.className = 'role-reveal-overlay role-mafia';
-        rt.textContent = 'MAFIA';
+        rt.textContent = role;
         charLobby.classList.add('mafia-glow');
       } else {
         rr.className = 'role-reveal-overlay role-operator';
-        rt.textContent = 'OPERATOR';
+        rt.textContent = role;
         charLobby.classList.remove('mafia-glow');
       }
 
@@ -3718,32 +3877,40 @@
     }
 
     function enterLobby(code, host) {
+      sessionStorage.setItem('cm_lobby', JSON.stringify({ code, host }));
+      pushScreen('lobby');
+      // sync local profile name to backend so other players see it
+      const profileName = state.profile && state.profile.name;
+      const DEFAULT_NAME = DEF_PROFILE.name;
+      if (profileName && profileName !== DEFAULT_NAME && authToken) {
+        API.updateUsername(profileName, authToken).catch(() => {});
+      }
       connectSocket();
       socket.emit("join_room", { roomCode: code });
-      state.lobby = { code, host, total: host ? state.ops : 4 };
+      const total = host ? state.ops : (state.room ? state.room.maxPlayers : 4);
+      // initialize connected count from actual room data if available
+      const connected = state.room && state.room.players ? state.room.players.length : (host ? 1 : 2);
+      state.lobby = { code, host, total, connected };
       closeModal();
       document.body.classList.add('lobby-mode');
 
       $('#lsRoomCode').textContent = code.slice(0, 3) + '-' + code.slice(3);
       $('#lsTagName').textContent = state.profile.name.toUpperCase();
+      $('#lsCountText').textContent = `${connected} / ${total} OPERATIVES CONNECTED`;
 
       const btn = $('#btnReady');
       btn.classList.remove('ready');
-      btn.innerHTML = host ? '<i data-lucide="play"></i>WAITING FOR OPERATIVES...' : '<i data-lucide="play"></i>READY TO DEPLOY';
-      icons();
 
       clearInterval(joinSim);
-      let connected = host ? 1 : 2;
-      $('#lsCountText').textContent = `${connected} / ${state.lobby.total} OPERATIVES CONNECTED`;
 
-      // Real players join via socket — no simulation needed
       if (host) {
-        state.lobby.connected = 1;
-        btn.innerHTML = '<i data-lucide="play"></i>WAITING FOR OPERATIVES...';
-        btn.classList.remove('ready');
+        if (connected >= 2) {
+          btn.innerHTML = `<i data-lucide="play"></i>START MISSION (${connected}/${total})`;
+        } else {
+          btn.innerHTML = `<i data-lucide="loader"></i>WAITING (${connected}/${total})…`;
+        }
         icons();
       } else {
-        state.lobby.connected = 2;
         btn.innerHTML = '<i data-lucide="play"></i>STANDING BY';
         btn.classList.add('ready');
         icons();
@@ -3756,6 +3923,9 @@
     function leaveLobby(silent) {
       clearInterval(joinSim); joinSim = null; state.lobby = null;
       clearInterval(tipInterval);
+      sessionStorage.removeItem('cm_lobby');
+      sessionStorage.removeItem('cm_role');
+      if (getScreen() !== 'home') history.pushState({ screen: 'home' }, '', '#home');
       document.body.classList.remove('lobby-mode');
       $('#charWrapLobby').classList.remove('mafia-glow');
       cIn.value = ''; renderBoxes();
@@ -3768,7 +3938,7 @@
       if (v.length < 6) {
         const msg = $('#joinMsg');
         msg.className = 'inline-msg err';
-        msg.textContent = 'CODE MUST BE 6 CHARACTERS — CHECK WITH YOUR HOST.';
+        msg.textContent = 'CODE MUST BE 6 CHARACTERS - CHECK WITH YOUR HOST.';
         cWrap.classList.add('shake'); setTimeout(() => cWrap.classList.remove('shake'), 400);
         beep(170, .13, 'sawtooth', .05);
         return;
@@ -3776,9 +3946,21 @@
       const btn = $('#btnJoin'), old = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<i data-lucide="loader" class="spin"></i>LINKING…'; icons();
-      await wait(900);
-      btn.disabled = false; btn.innerHTML = old; icons();
-      enterLobby(v, false);
+      try {
+        await ensureAuth();
+        const result = await API.joinRoom(v, authToken);
+        if (result.error) throw new Error(result.error);
+        state.room = result;
+        btn.disabled = false; btn.innerHTML = old; icons();
+        enterLobby(v, false);
+      } catch (err) {
+        btn.disabled = false; btn.innerHTML = old; icons();
+        const msg = $('#joinMsg');
+        msg.className = 'inline-msg err';
+        msg.textContent = err.message.toUpperCase();
+        cWrap.classList.add('shake'); setTimeout(() => cWrap.classList.remove('shake'), 400);
+        beep(170, .13, 'sawtooth', .05);
+      }
     }
     function loading(btn, label) {
       const old = btn.innerHTML;
@@ -3790,7 +3972,6 @@
       const undo = loading($('#btnCreate'), 'ALLOCATING…');
       try {
         await ensureAuth();
-        console.log("Token:", authToken); // ADD THIS
         const room = await API.createRoom({
           maxPlayers: state.ops,
           mafiaCount: 1,
@@ -3816,12 +3997,12 @@
     $('#btnJoin').addEventListener('click', tryJoin);
     $('#btnCopy').addEventListener('click', async () => {
       const c = state.lobby ? state.lobby.code : '';
-      try { await navigator.clipboard.writeText(c); toast('ROOM CODE COPIED — ' + c, 'ok'); }
+      try { await navigator.clipboard.writeText(c); toast('ROOM CODE COPIED - ' + c, 'ok'); }
       catch (e) {
         const ta = document.createElement('textarea');
         ta.value = c; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); toast('ROOM CODE COPIED — ' + c, 'ok'); }
-        catch (e2) { toast('CLIPBOARD BLOCKED — code: ' + c, 'err'); }
+        try { document.execCommand('copy'); toast('ROOM CODE COPIED - ' + c, 'ok'); }
+        catch (e2) { toast('CLIPBOARD BLOCKED - code: ' + c, 'err'); }
         ta.remove();
       }
     });
@@ -3900,7 +4081,7 @@
       state.profile.name = v;
       store.set('cm_profile', state.profile);
       syncProfileUI();
-      toast('CODENAME UPDATED — WELCOME, ' + v, 'ok');
+      toast('CODENAME UPDATED - WELCOME, ' + v, 'ok');
     });
 
     /* ---------- settings ---------- */
@@ -3935,11 +4116,11 @@
       state.profile = Object.assign({}, DEF_PROFILE);
       state.settings = Object.assign({}, DEF_SETTINGS);
       syncProfileUI(); applySettings();
-      toast('LOCAL DATA WIPED — DEFAULTS RESTORED', 'ok');
+      toast('LOCAL DATA WIPED - DEFAULTS RESTORED', 'ok');
     });
 
     /* ================================================================
-       CITY ENGINE — animated fallback background
+       CITY ENGINE - animated fallback background
        3 parallax skyline layers, lit windows, rain, traffic, fog
        ================================================================ */
     const cv = $('#city'), cc = cv.getContext('2d');
@@ -4125,20 +4306,25 @@
     let saveIntv;
     let sabotageCount = 0;
 
-    const BUGGY_PY = `def binary_search(arr, target):
-    left, right = 0, len(arr)
-    
-    while left <= right:
-        mid = (left + right) // 2
-        
-        if arr[mid] == target:
-            return mid
-        elif arr[mid] < target:
-            left = mid + 1
-        else:
-            right = mid - 1
-            
-    return -1`;
+    const BUGGY_PY = `function binarySearch(arr, target) {
+  let left = 0, right = arr.length - 1;
+  while (left < right) {  // BUG: should be <=
+    let mid = Math.floor((left + right) / 2);
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  return -1;
+}
+const [arr, target] = JSON.parse(input);
+console.log(binarySearch(arr, target));`;
+
+    const TEST_CASES = [
+      { id: 'test_middle_element', input: '[[1,3,5,7,9],5]',  expectedOutput: '2'  },
+      { id: 'test_first_element',  input: '[[1,3,5,7,9],1]',  expectedOutput: '0'  },
+      { id: 'test_last_element',   input: '[[1,3,5,7,9],9]',  expectedOutput: '4'  },
+      { id: 'test_not_found',      input: '[[1,3,5,7,9],4]',  expectedOutput: '-1' },
+    ];
 
     function highlightPy(text) {
       let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -4169,6 +4355,9 @@
     });
 
     function initGameStage(role) {
+      sessionStorage.setItem('cm_role', role);
+      pushScreen('game');
+      document.body.classList.remove('lobby-mode');
       document.body.classList.add('game-mode');
       document.body.classList.toggle('mafia-active', role === 'MAFIA');
 
@@ -4196,6 +4385,14 @@
         const tb = $('#tbTimer');
         tb.textContent = `${m}:${s}`;
         tb.className = timeLeft < 60 ? 'critical' : (timeLeft < 300 ? 'danger' : '');
+        
+        if (timeLeft === 15 * 60) {
+            toast('BLIND PHASE OVER. EDITS NOW VISIBLE.', 'warn');
+        } else if (timeLeft === 2 * 60) {
+            toast('LOCKDOWN INITIATED. SELECT SUSPECT.', 'err');
+            openBlameModal();
+        }
+
         if (timeLeft <= 0) {
           clearInterval(gameTimerIntv);
           window.location.href = 'results.html';
@@ -4255,13 +4452,25 @@
       const p = $(`#ro-${idx}`);
       const ta = p.querySelector('textarea');
       const html = p.querySelector('.ro-html');
-      html.innerHTML = highlightPy(ta.value);
+      const sabotaged = ta.value;
+      html.innerHTML = highlightPy(sabotaged);
       p.classList.remove('sabotage-mode');
       ta.style.display = 'none';
       html.style.display = 'block';
       sabotageCount++;
       $('#gbSabotageLog').textContent = `⚑ ${sabotageCount} DEPLOYED`;
       toast('SABOTAGE DEPLOYED', 'err');
+      // push to all other players via socket
+      if (socket && state.gameId) {
+        socket.emit("code_sync", {
+          update: sabotaged,
+          filename: "main.py",
+          roomCode: state.gameId,
+          gameId: state.gameId,
+          diff: sabotaged,
+          changeType: "SABOTAGE",
+        });
+      }
     };
 
     $('#btnRunTests').addEventListener('click', async (e) => {
@@ -4269,35 +4478,180 @@
       const old = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = `<i data-lucide="loader" class="spin"></i>RUNNING…`; icons();
-      await wait(1500);
-      btn.disabled = false; btn.innerHTML = old; icons();
-
-      const r = $('#testResults');
-      const passedCount = Math.random() > 0.3 ? 4 : Math.floor(Math.random() * 4);
-      const tests = ['test_empty_array', 'test_single_element', 'test_out_of_bounds', 'test_negative_values'];
-      let listHtml = '';
-      tests.forEach((t, i) => {
-        const p = i < passedCount;
-        listHtml += `<div class="tr-row ${p ? 'pass' : 'fail'}"><span><i>${p ? '✓' : '✗'}</i>${t}</span><span>${p ? 'PASSED' : 'FAILED'}</span></div>`;
-      });
-      $('#trList').innerHTML = listHtml;
-
-      if (passedCount === 4) {
-        r.classList.remove('fail');
-        $('#trSummary').textContent = `✓ ALL TESTS PASSED`;
-      } else {
-        r.classList.add('fail');
-        $('#trSummary').textContent = `${passedCount} / 4 PASSING · FIX AND RERUN`;
+      try {
+        await ensureAuth();
+        const code = $('#edInput').value;
+        const result = await API.runTests(state.gameId, code, TEST_CASES, state.gameId, authToken);
+        if (result.error) throw new Error(result.error);
+        const { passed, total, results } = result;
+        let listHtml = '';
+        results.forEach(t => {
+          const p = t.status === 'PASS';
+          listHtml += `<div class="tr-row ${p ? 'pass' : 'fail'}">
+            <span><i>${p ? '✓' : '✗'}</i>${t.testId}</span>
+            <span>${p ? 'PASSED' : `FAILED · got ${t.output || 'error'}, expected ${t.expected}`}</span>
+          </div>`;
+        });
+        $('#trList').innerHTML = listHtml;
+        if (passed === total) {
+          $('#testResults').classList.remove('fail');
+          $('#trSummary').textContent = `✓ ALL TESTS PASSED`;
+        } else {
+          $('#testResults').classList.add('fail');
+          $('#trSummary').textContent = `${passed} / ${total} PASSING · FIX AND RERUN`;
+        }
+      } catch (err) {
+        $('#trList').innerHTML = `<div class="tr-row fail"><span>✗ Runner error</span><span>${err.message}</span></div>`;
+        $('#trSummary').textContent = 'RUNNER ERROR';
+        $('#testResults').classList.add('fail');
       }
-      r.classList.add('on');
+      btn.disabled = false; btn.innerHTML = old; icons();
+      $('#testResults').classList.add('on');
     });
 
     $('#btnTrClose').addEventListener('click', () => $('#testResults').classList.remove('on'));
-    $('#btnBlame').addEventListener('click', () => toast('ACCUSATION FILED — AWAITING VOTE', 'err'));
+    /* ---------- blame / voting ---------- */
+    let activeVoteRoundId = null;
+    let activeGamePlayerId = null; // current user's gamePlayerId
 
+    function openBlameModal() {
+      if (!state.gameId) { toast('NO ACTIVE GAME', 'err'); return; }
+      ensureAuth().then(async () => {
+        try {
+          const gs = await API.getGameState(state.gameId, authToken);
+          const players = gs.players || gs.gamePlayers || [];
+          const myId = currentUser && currentUser.id;
+          const me = players.find(p => p.userId === myId);
+          if (me) activeGamePlayerId = me.gamePlayerId;
+          const others = players.filter(p => p.userId !== myId);
+          if (others.length === 0) { toast('NO OTHER PLAYERS TO ACCUSE', 'err'); return; }
+
+          const list = $('#blamePlayerList');
+          list.innerHTML = '';
+          others.forEach(p => {
+            const btn = document.createElement('button');
+            btn.className = 'blame-player-btn';
+            // roles are hidden during game - show detective avatar as "unknown suspect"
+            btn.innerHTML = `<img class="bp-avatar" src="assets/avatar_detective.png" alt="suspect"><span>${p.username}</span>`;
+            btn.addEventListener('click', () => submitAccusation(p.userId));
+            list.appendChild(btn);
+          });
+          openModal('m-blame');
+        } catch (err) {
+          toast('FAILED TO LOAD PLAYERS', 'err');
+        }
+      });
+    }
+
+    async function submitAccusation(nominatedUserId) {
+      try {
+        await ensureAuth();
+        const result = await API.startVote(state.gameId, nominatedUserId, authToken);
+        if (result.error) throw new Error(result.error);
+        closeModal();
+        toast('ACCUSATION FILED - AWAITING VOTE', 'err');
+      } catch (err) {
+        toast('ACCUSATION FAILED: ' + (err.message || err), 'err');
+      }
+    }
+
+    function openVotePanel(data) {
+      activeVoteRoundId = data.voteRoundId;
+      const nomineeLabel = data.nominatedUsername || data.nominatedUserId || 'SUSPECT';
+      $('#voteNomineeLabel').textContent = nomineeLabel;
+      $('#voteCastConfirm').hidden = true;
+      $('#voteTally').innerHTML = '';
+      $('#btnVoteGuilty').disabled = false;
+      $('#btnVoteInnocent').disabled = false;
+      closeModal();
+      openModal('m-vote');
+    }
+
+    function appendVoteTally(data) {
+      const row = document.createElement('div');
+      row.className = 'vote-tally-row';
+      const badge = data.inFavor ? `<span class="vt-badge g">GUILTY</span>` : `<span class="vt-badge i">INNOCENT</span>`;
+      row.innerHTML = `${badge} <span>${data.voterUsername || data.voterId}</span>`;
+      $('#voteTally').appendChild(row);
+    }
+
+    async function castVote(inFavor) {
+      try {
+        await ensureAuth();
+        $('#btnVoteGuilty').disabled = true;
+        $('#btnVoteInnocent').disabled = true;
+        await API.castVote(state.gameId, activeVoteRoundId, activeGamePlayerId, inFavor, authToken);
+        // notify others via socket so their tally updates
+        if (socket) {
+          socket.emit("vote_cast", {
+            roomCode: state.gameId,
+            inFavor,
+            voterUsername: currentUser && currentUser.username,
+          });
+        }
+        $('#voteCastConfirm').hidden = false;
+      } catch (err) {
+        toast('VOTE FAILED: ' + (err.message || err), 'err');
+        $('#btnVoteGuilty').disabled = false;
+        $('#btnVoteInnocent').disabled = false;
+      }
+    }
+
+    $('#btnBlame').addEventListener('click', openBlameModal);
+    $('#btnVoteGuilty').addEventListener('click', () => castVote(true));
+    $('#btnVoteInnocent').addEventListener('click', () => castVote(false));
+
+
+    /* ---------- hash routing ---------- */
+    function getScreen() {
+      return location.hash.replace('#', '') || 'home';
+    }
+
+    function pushScreen(screen) {
+      if (getScreen() !== screen) history.pushState({ screen }, '', '#' + screen);
+    }
+
+    function applyScreen(screen) {
+      if (screen === 'lobby') {
+        const saved = sessionStorage.getItem('cm_lobby');
+        if (saved) {
+          const { code, host } = JSON.parse(saved);
+          if (!state.lobby) enterLobby(code, host);
+        } else {
+          history.replaceState({ screen: 'home' }, '', '#home');
+        }
+      } else if (screen === 'game') {
+        const savedRole = sessionStorage.getItem('cm_role');
+        if (savedRole && !document.body.classList.contains('game-mode')) {
+          initGameStage(savedRole);
+        } else if (!savedRole) {
+          history.replaceState({ screen: 'home' }, '', '#home');
+        }
+      } else {
+        // home - tear down any active screen
+        if (document.body.classList.contains('lobby-mode')) leaveLobby(true);
+        if (document.body.classList.contains('game-mode')) {
+          document.body.classList.remove('game-mode', 'mafia-active');
+          clearInterval(gameTimerIntv);
+        }
+      }
+    }
+
+    window.addEventListener('popstate', (e) => {
+      applyScreen(e.state ? e.state.screen : getScreen());
+    });
+
+    // on load, honour the current hash (e.g. user hit refresh on /#lobby)
+    applyScreen(getScreen());
 
     /* ---------- boot ---------- */
-    ensureAuth();
+    ensureAuth().then(() => {
+      if (currentUser && currentUser.username && state.profile.name === DEF_PROFILE.name) {
+        state.profile.name = currentUser.username.toUpperCase();
+        store.set('cm_profile', state.profile);
+        syncProfileUI();
+      }
+    });
     resize();
     applySettings();
     syncProfileUI();
@@ -4309,7 +4663,7 @@
     requestAnimationFrame(frame);
     typeLoop();
     setTimeout(() => { $('#xpFill').style.width = pct() + '%'; }, 600);
-    setTimeout(() => toast('SYSTEM ONLINE — CODE MAFIA frontend v0.4.1'), 900);
+    if (new URLSearchParams(location.search).get('play')) setTimeout(() => openPlay(), 400);
   </script>
 </body>
 

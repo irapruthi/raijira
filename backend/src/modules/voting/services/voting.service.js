@@ -66,7 +66,6 @@ async function resolveVote({ voteRoundId, io, roomCode }) {
                 userId: voteRound.nominatedUserId,
             },
             data: {
-                isEliminated: true,
                 isRevealed: true,
             },
         });

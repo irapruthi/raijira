@@ -5,6 +5,7 @@ const {
     guest,
     refresh,
     me,
+    updateMe,
 } = require("../controllers/auth.controller.js");
 const {
     authenticate,
@@ -17,5 +18,6 @@ router.post("/login", login);
 router.post("/guest", guest);
 router.post("/refresh", refresh);
 router.get("/me", authenticate, me);
+router.patch("/me", authenticate, updateMe);
 
 module.exports = router;

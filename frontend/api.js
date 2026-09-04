@@ -21,7 +21,7 @@ async function ensureAuth() {
         console.log("Logged in as guest:", currentUser.username);
     } catch (err) {
         console.error("Auth failed:", err);
-        toast("BACKEND OFFLINE — running in demo mode", "err");
+        toast("BACKEND OFFLINE - running in demo mode", "err");
     }
 }
 
@@ -49,7 +49,7 @@ const API = {
     joinRoom: (roomCode, token) =>
         fetch(`${CONFIG.API_URL}/rooms/${roomCode}/join`, {
             method: "POST",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         }).then(r => r.json()),
 
     // GAME
@@ -57,6 +57,32 @@ const API = {
         fetch(`${CONFIG.API_URL}/rooms/${roomId}/start`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` },
+        }).then(r => r.json()),
+
+    updateUsername: (username, token) =>
+        fetch(`${CONFIG.API_URL}/auth/me`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ username }),
+        }).then(r => r.json()),
+
+    getGameState: (gameId, token) =>
+        fetch(`${CONFIG.API_URL}/games/${gameId}/state`, {
+            headers: { Authorization: `Bearer ${token}` },
+        }).then(r => r.json()),
+
+    startVote: (gameId, nominatedUserId, token) =>
+        fetch(`${CONFIG.API_URL}/games/${gameId}/vote/start`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ nominatedUserId, round: 1 }),
+        }).then(r => r.json()),
+
+    castVote: (gameId, voteRoundId, gamePlayerId, inFavor, token) =>
+        fetch(`${CONFIG.API_URL}/games/${gameId}/vote/cast`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ voteRoundId, gamePlayerId, inFavor }),
         }).then(r => r.json()),
 
     runTests: (gameId, code, testCases, roomCode, token) =>

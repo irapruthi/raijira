@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Space+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.462.0/umd/lucide.min.js" onerror="var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/lucide@0.462.0/dist/umd/lucide.min.js';document.head.appendChild(s)"></script>
 
   <style>
     /* DESIGN TOKENS */
@@ -197,37 +197,71 @@
     .r-body {
       display: flex; gap: 20px; flex-grow: 1; min-height: 0;
     }
-    .r-col-left { flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 8px; }
-    .r-col-right { flex: 1; display: flex; flex-direction: column; gap: 20px; }
+    .r-col-left { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; padding-right: 8px; }
+    .r-col-right { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px; min-height: 0; }
 
     /* R2: Player Scorecards */
     .scorecard {
-      padding: 16px; position: relative;
-      display: flex; flex-direction: column; gap: 12px;
+      padding: 0; position: relative;
+      display: flex; flex-direction: row; align-items: stretch;
+      overflow: hidden;
+      border-radius: 8px;
+      flex-shrink: 0;
     }
-    .sc-head { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(240,235,224,0.1); padding-bottom: 10px; }
-    .sc-name { font-family: var(--font-m); font-size: 16px; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-    .sc-role { font-family: var(--font-m); font-size: 11px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; }
+    /* role color bar */
+    .sc-bar {
+      width: 3px; flex-shrink: 0;
+      background: var(--teal);
+    }
+    .scorecard.is-mafia .sc-bar { background: var(--red); }
+    .scorecard.is-you .sc-bar { background: var(--amber); }
+
+    .sc-inner {
+      flex: 1; display: flex; flex-direction: row; align-items: center;
+      padding: 14px 16px; gap: 16px;
+    }
+
+    /* left: identity */
+    .sc-identity { display: flex; flex-direction: column; gap: 4px; min-width: 120px; }
+    .sc-name { font-family: var(--font-m); font-size: 13px; font-weight: bold; letter-spacing: .04em; }
+    .sc-meta { display: flex; align-items: center; gap: 6px; }
+    .sc-role { font-family: var(--font-m); font-size: 10px; letter-spacing: 1px; padding: 2px 6px; border-radius: 3px; }
     .sc-role.debugger { background: rgba(78,205,196,0.15); color: var(--teal); border: 1px solid rgba(78,205,196,0.3); }
-    .sc-role.mafia { background: rgba(224,82,82,0.15); color: var(--red); border: 1px solid rgba(224,82,82,0.3); }
-    
-    .scorecard.is-mafia { border-color: rgba(224,82,82,0.4); box-shadow: inset 0 0 20px rgba(224,82,82,0.05); }
-    .scorecard.is-you { border-color: var(--amber); }
-    .you-badge { position: absolute; top: -8px; right: -8px; background: var(--amber); color: #000; font-family: var(--font-m); font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+    .sc-role.mafia    { background: rgba(224,82,82,0.15);  color: var(--red);  border: 1px solid rgba(224,82,82,0.3); }
+    .sc-lvl { font-family: var(--font-m); font-size: 10px; color: rgba(240,235,224,0.4); }
 
-    .sc-stats { display: flex; flex-direction: column; gap: 6px; }
-    .sc-stat-row { display: flex; justify-content: space-between; font-size: 13px; }
-    .sc-stat-label { color: rgba(240,235,224,0.6); }
-    .sc-stat-val { font-family: var(--font-m); }
+    /* center: stats */
+    .sc-stats {
+      flex: 1; display: flex; flex-direction: row; gap: 20px;
+      border-left: 1px solid rgba(240,235,224,0.07);
+      padding-left: 16px;
+    }
+    .sc-stat-col { display: flex; flex-direction: column; gap: 3px; }
+    .sc-stat-label { font-size: 10px; letter-spacing: .08em; color: rgba(240,235,224,0.45); text-transform: uppercase; }
+    .sc-stat-val { font-family: var(--font-m); font-size: 13px; }
     .val-teal { color: var(--teal); }
-    .val-red { color: var(--red); }
+    .val-red  { color: var(--red); }
 
-    .sc-rewards { display: flex; gap: 16px; font-family: var(--font-m); font-size: 14px; font-weight: bold; padding-top: 6px; }
-    .sc-xp { color: var(--amber); }
-    .sc-dia { color: var(--gold); }
+    /* right: rewards */
+    .sc-rewards {
+      display: flex; flex-direction: column; align-items: flex-end; gap: 4px;
+      border-left: 1px solid rgba(240,235,224,0.07);
+      padding-left: 16px; flex-shrink: 0;
+    }
+    .sc-xp  { font-family: var(--font-m); font-size: 13px; color: var(--amber); }
+    .sc-dia { font-family: var(--font-m); font-size: 12px; color: var(--gold); }
+
+    .scorecard.is-mafia { border-color: rgba(224,82,82,0.3); }
+    .scorecard.is-you   { border-color: rgba(200,121,65,0.5); }
+    .you-badge {
+      position: absolute; top: 6px; right: 8px;
+      background: var(--amber); color: #000;
+      font-family: var(--font-m); font-size: 9px; font-weight: bold;
+      padding: 1px 5px; border-radius: 3px;
+    }
 
     /* R3: Your Rewards Panel */
-    .rewards-panel { padding: 24px; flex-grow: 1; display: flex; flex-direction: column; gap: 24px; }
+    .rewards-panel { padding: 24px; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; min-height: 0; }
     .rp-title { font-family: var(--font-m); font-size: 14px; letter-spacing: 2px; color: rgba(240,235,224,0.6); border-bottom: 1px solid rgba(240,235,224,0.1); padding-bottom: 8px; }
     
     .xp-breakdown { display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
@@ -273,6 +307,40 @@
     .stat-box { display: flex; flex-direction: column; align-items: center; gap: 8px; }
     .stat-lbl { font-size: 12px; letter-spacing: 2px; color: rgba(240,235,224,0.6); }
     .stat-num { font-family: var(--font-m); font-size: 24px; }
+
+    /* PODIUM */
+    .podium-strip {
+      display: flex; justify-content: center; align-items: flex-end;
+      gap: 12px; padding: 16px 24px 12px;
+    }
+    .podium-slot {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity .4s ease, transform .4s ease;
+    }
+    .podium-slot.show { opacity: 1; transform: none; }
+    .podium-slot:nth-child(1) { transition-delay: .1s; }  /* 2nd */
+    .podium-slot:nth-child(2) { transition-delay: 0s; margin-bottom: 18px; } /* 1st - raised */
+    .podium-slot:nth-child(3) { transition-delay: .2s; }  /* 3rd */
+    .podium-medal {
+      width: 60px; height: 60px; object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.5));
+    }
+    .podium-place {
+      font-family: var(--font-m); font-size: 9px; letter-spacing: .18em;
+      color: rgba(240,235,224,.5);
+    }
+    .podium-name {
+      font-family: var(--font-d); font-size: 13px; letter-spacing: .06em;
+      max-width: 110px; text-align: center; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .podium-slot.rank-1 .podium-name { color: #F4C430; }
+    .podium-slot.rank-2 .podium-name { color: #C0C0C0; }
+    .podium-slot.rank-3 .podium-name { color: #CD7F32; }
+    .podium-xp {
+      font-family: var(--font-m); font-size: 11px; color: var(--amber);
+    }
 
     /* R5: Buttons */
     .r-actions { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-top: 10px; }
@@ -351,6 +419,9 @@
     <div id="beat3">
       <div class="r-container">
         
+        <!-- PODIUM -->
+        <div class="podium-strip glass" id="podiumStrip"></div>
+
         <!-- R1: Header -->
         <div class="r-header glass">
           <div class="rh-left">

@@ -1,12 +1,15 @@
 const prisma = require("../../../config/prisma.js");
-const { v4: uuidv4 } = require("uuid");
+
+const ROOM_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 async function generateUniqueRoomCode() {
     let roomCode;
     let existingRoom;
 
     do {
-        roomCode = uuidv4().slice(0, 6).toUpperCase();
+        roomCode = Array.from({ length: 6 }, () =>
+            ROOM_CODE_ALPHABET[Math.floor(Math.random() * ROOM_CODE_ALPHABET.length)]
+        ).join('');
 
         existingRoom = await prisma.room.findUnique({
             where: { roomCode },

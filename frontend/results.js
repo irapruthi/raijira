@@ -1,10 +1,55 @@
-const IS_MAFIA_WIN = Math.random() > 0.5;
-const PLAYERS = [
-  { name: 'GHOST_FOX', role: 'DEBUGGER', lvl: 7, tests: '3 / 4', bugs: 2, sabotaged: false, xp: 420, dia: 8, isYou: true },
-  { name: 'NULL_PTR', role: 'DEBUGGER', lvl: 12, tests: '4 / 4', bugs: 3, sabotaged: true, xp: 550, dia: 12, isYou: false },
-  { name: 'K4R3N', role: 'MAFIA', lvl: 5, sabDeployed: 2, disrupted: '1 / 3', detected: true, xp: 180, dia: 3, isYou: false },
-  { name: 'SEGFAULT_SUE', role: 'DEBUGGER', lvl: 9, tests: '1 / 4', bugs: 0, sabotaged: false, xp: 100, dia: 2, isYou: false },
-];
+// Load real game result written by game_over socket event
+const _raw = localStorage.getItem("cm_result");
+const _gameResult = _raw ? JSON.parse(_raw) : null;
+const _myUser = JSON.parse(localStorage.getItem("cm_user") || "null");
+
+const IS_MAFIA_WIN = _gameResult ? _gameResult.winner === "MAFIA" : false;
+
+let PLAYERS;
+if (_gameResult && _gameResult.finalRoles && _gameResult.finalRoles.length > 0) {
+  PLAYERS = _gameResult.finalRoles.map(p => {
+    const isMafia = p.role === "MAFIA" || p.role === "SABOTEUR";
+    const isWinner = IS_MAFIA_WIN ? isMafia : !isMafia;
+    const isYou = _myUser && p.userId === _myUser.id;
+    const xp = isWinner ? 350 + Math.floor(Math.random() * 200) : 80 + Math.floor(Math.random() * 120);
+    const dia = isWinner ? 6 + Math.floor(Math.random() * 8) : 1 + Math.floor(Math.random() * 4);
+    if (isMafia) {
+      return { name: p.username.toUpperCase(), role: 'MAFIA', lvl: 5,
+               sabDeployed: 2, disrupted: '? / ?', detected: !IS_MAFIA_WIN,
+               xp, dia, isYou };
+    } else {
+      const roleLabel = p.role === 'DETECTIVE' ? 'DETECTIVE' : p.role === 'LEAD_DEV' ? 'LEAD DEV' : 'DEBUGGER';
+      return { name: p.username.toUpperCase(), role: roleLabel, lvl: 7,
+               tests: '? / 4', bugs: Math.floor(Math.random() * 4),
+               sabotaged: false, xp, dia, isYou };
+    }
+  });
+} else {
+  // Fallback if navigated directly without a real game
+  PLAYERS = [
+    { name: 'GHOST_FOX', role: 'DEBUGGER', lvl: 7, tests: '3 / 4', bugs: 2, sabotaged: false, xp: 420, dia: 8, isYou: true },
+    { name: 'NULL_PTR',   role: 'DEBUGGER', lvl: 12, tests: '4 / 4', bugs: 3, sabotaged: true,  xp: 550, dia: 12, isYou: false },
+    { name: 'K4R3N',      role: 'MAFIA',    lvl: 5, sabDeployed: 2, disrupted: '1 / 3', detected: true, xp: 180, dia: 3, isYou: false },
+    { name: 'SEGFAULT_SUE', role: 'DEBUGGER', lvl: 9, tests: '1 / 4', bugs: 0, sabotaged: false, xp: 100, dia: 2, isYou: false },
+  ];
+}
+
+// Populate beat2 mafia reveal with real player data
+const _mafiaPlayer = PLAYERS.find(p => p.role === 'MAFIA');
+if (_mafiaPlayer) {
+  const b2Name = document.querySelector('.b2-name');
+  const b2Status = document.querySelector('.b2-status');
+  if (b2Name) b2Name.textContent = _mafiaPlayer.name;
+  if (b2Status) {
+    if (_mafiaPlayer.detected) {
+      b2Status.textContent = '[ SUCCESSFULLY IDENTIFIED ]';
+      b2Status.className = 'b2-status caught';
+    } else {
+      b2Status.textContent = '[ NEVER DETECTED ]';
+      b2Status.className = 'b2-status escaped';
+    }
+  }
+}
 
 const TOKENS = [
   { id: 'eagle', icon: 'search', name: 'EAGLE EYE', desc: 'Correctly voted Mafia first try', rarity: 'rare', color: 'token-rare' },
@@ -13,7 +58,8 @@ const TOKENS = [
 ];
 
 // Initialize Icons
-lucide.createIcons();
+const icons = () => { if (typeof lucide !== 'undefined') lucide.createIcons(); };
+icons();
 
 // Setup DOM
 const beat1 = document.getElementById('beat1');
@@ -32,41 +78,42 @@ function renderScorecards() {
   const cont = document.getElementById('scorecardsCont');
   cont.innerHTML = PLAYERS.map(p => {
     const isMafia = p.role === 'MAFIA';
-    let stats = '';
+    let statCols = '';
     if (isMafia) {
-      stats = `
-        <div class="sc-stat-row"><span class="sc-stat-label">SABOTAGES DEPLOYED</span><span class="sc-stat-val">${p.sabDeployed}</span></div>
-        <div class="sc-stat-row"><span class="sc-stat-label">PLAYERS DISRUPTED</span><span class="sc-stat-val">${p.disrupted}</span></div>
-        <div class="sc-stat-row"><span class="sc-stat-label">DETECTED</span><span class="sc-stat-val ${p.detected?'val-teal':'val-red'}">${p.detected?'YES':'NO'}</span></div>
+      statCols = `
+        <div class="sc-stat-col"><span class="sc-stat-label">Sabotages</span><span class="sc-stat-val">${p.sabDeployed}</span></div>
+        <div class="sc-stat-col"><span class="sc-stat-label">Disrupted</span><span class="sc-stat-val">${p.disrupted}</span></div>
+        <div class="sc-stat-col"><span class="sc-stat-label">Detected</span><span class="sc-stat-val ${p.detected?'val-teal':'val-red'}">${p.detected?'YES':'NO'}</span></div>
       `;
     } else {
-      stats = `
-        <div class="sc-stat-row"><span class="sc-stat-label">TESTS PASSED</span><span class="sc-stat-val">${p.tests}</span></div>
-        <div class="sc-stat-row"><span class="sc-stat-label">BUGS FIXED</span><span class="sc-stat-val">${p.bugs}</span></div>
-        <div class="sc-stat-row"><span class="sc-stat-label">SABOTAGED</span><span class="sc-stat-val ${p.sabotaged?'val-red':'val-teal'}">${p.sabotaged?'YES':'NO'}</span></div>
+      statCols = `
+        <div class="sc-stat-col"><span class="sc-stat-label">Tests</span><span class="sc-stat-val">${p.tests}</span></div>
+        <div class="sc-stat-col"><span class="sc-stat-label">Bugs</span><span class="sc-stat-val">${p.bugs}</span></div>
+        <div class="sc-stat-col"><span class="sc-stat-label">Sabotaged</span><span class="sc-stat-val ${p.sabotaged?'val-red':'val-teal'}">${p.sabotaged?'YES':'NO'}</span></div>
       `;
     }
-    
     return `
       <div class="scorecard glass ${isMafia ? 'is-mafia' : ''} ${p.isYou ? 'is-you' : ''}">
         ${p.isYou ? '<div class="you-badge">YOU</div>' : ''}
-        <div class="sc-head">
-          <div class="sc-name">
-            ${isMafia ? '<i data-lucide="flag" size="16"></i>' : '<i data-lucide="play" size="16"></i>'}
-            ${p.name}
+        <div class="sc-bar"></div>
+        <div class="sc-inner">
+          <div class="sc-identity">
+            <div class="sc-name">${p.name}</div>
+            <div class="sc-meta">
+              <span class="sc-role ${p.role.toLowerCase()}">${p.role}</span>
+              <span class="sc-lvl">LVL ${String(p.lvl).padStart(2,'0')}</span>
+            </div>
           </div>
-          <div class="sc-role ${p.role.toLowerCase()}">${p.role}</div>
-        </div>
-        <div style="font-family:var(--font-m); font-size:11px; opacity:0.6; margin-top:-4px; margin-bottom:4px;">LVL ${String(p.lvl).padStart(2,'0')}</div>
-        <div class="sc-stats">${stats}</div>
-        <div class="sc-rewards">
-          <span class="sc-xp">+ <span class="card-xp-val" data-val="${p.xp}">0</span> XP</span>
-          <span class="sc-dia">+ <span class="card-dia-val" data-val="${p.dia}">0</span> ◆</span>
+          <div class="sc-stats">${statCols}</div>
+          <div class="sc-rewards">
+            <span class="sc-xp">+<span class="card-xp-val" data-val="${p.xp}">0</span> XP</span>
+            <span class="sc-dia">+<span class="card-dia-val" data-val="${p.dia}">0</span> ◆</span>
+          </div>
         </div>
       </div>
     `;
   }).join('');
-  lucide.createIcons();
+  icons();
 }
 
 function renderTokens() {
@@ -79,11 +126,41 @@ function renderTokens() {
       <div class="tc-rarity">${t.rarity.toUpperCase()}</div>
     </div>
   `).join('');
-  lucide.createIcons();
+  icons();
+}
+
+const MEDAL_IMGS = {
+  1: 'assets/medal_gold.png',
+  2: 'assets/medal_silver.png',
+  3: 'assets/medal_bronze.png',
+};
+const PLACE_LABELS = { 1: '1ST PLACE', 2: '2ND PLACE', 3: '3RD PLACE' };
+
+function renderPodium() {
+  const sorted = [...PLAYERS].sort((a, b) => b.xp - a.xp);
+  const top3 = sorted.slice(0, 3);
+  // reorder for podium: 2nd, 1st, 3rd
+  const order = [top3[1], top3[0], top3[2]].filter(Boolean);
+  const ranks  = [2, 1, 3];
+
+  const strip = document.getElementById('podiumStrip');
+  strip.innerHTML = order.map((p, i) => {
+    const rank = ranks[i];
+    const medal = MEDAL_IMGS[rank];
+    return `
+      <div class="podium-slot rank-${rank}" data-idx="${i}">
+        <img class="podium-medal" src="${medal}" alt="${PLACE_LABELS[rank]}"
+             onerror="this.style.display='none'">
+        <div class="podium-name">${p.name}</div>
+        <div class="podium-place">${PLACE_LABELS[rank]}</div>
+        <div class="podium-xp">+${p.xp} XP</div>
+      </div>`;
+  }).join('');
 }
 
 renderScorecards();
 renderTokens();
+renderPodium();
 
 // Animations
 function animateValue(obj, start, end, duration, suffix = '') {
@@ -103,6 +180,11 @@ function animateValue(obj, start, end, duration, suffix = '') {
 }
 
 function runBeat3Animations() {
+  // Podium slots pop in
+  document.querySelectorAll('.podium-slot').forEach((s, i) => {
+    setTimeout(() => s.classList.add('show'), i * 120);
+  });
+
   // Staggered XP lines
   const rows = document.querySelectorAll('.xp-row');
   rows.forEach((r, i) => {
